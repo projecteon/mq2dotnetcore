@@ -2,7 +2,6 @@
 
 	<!-- Shared properties -->
 	<PropertyGroup>
-
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 

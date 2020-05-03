@@ -42,11 +42,11 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>$(NETFXKitsDir)Include\um;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
-    <OutDir>..\..\build\Debug\MQ2DotNetLoaderCore\</OutDir>
+    <OutDir>$(BaseOutputPath)\MQ2DotNetLoaderCore\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>$(NETFXKitsDir)Include\um;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
-    <OutDir>..\..\build\Release\MQ2DotNetLoaderCore\</OutDir>
+    <OutDir>$(BaseOutputPath)\MQ2DotNetLoaderCore\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
