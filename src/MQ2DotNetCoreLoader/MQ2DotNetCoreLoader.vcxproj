@@ -84,12 +84,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="inc\coreclr_delegates.h" />
-    <ClInclude Include="inc\hostfxr.h" />
+    <ClInclude Include="includes\coreclr_delegates.h" />
+    <ClInclude Include="includes\hostfxr.h" />
+    <ClInclude Include="libs\nethost\nethost.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MQ2DotNetCoreLoader.cpp" />
   </ItemGroup>
+  <Target Name="CopyLibraries" AfterTargets="Build">
+    <Copy SourceFiles="libs\nethost\" DestinationFiles="$(OutDir)" />
+  </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

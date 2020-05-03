@@ -1,8 +1,7 @@
 <Project>
+
 	<!-- Shared properties -->
 	<PropertyGroup>
-		<SourceRoot>$(MSBuildThisFileDirectory)src</SourceRoot>
-		<BinRoot>$(MSBuildThisFileDirectory)bin</BinRoot>
 
 		<Nullable>enable</Nullable>
 	</PropertyGroup>

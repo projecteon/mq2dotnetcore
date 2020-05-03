@@ -11,29 +11,17 @@
 #include <iostream>
 
 // Provided by the AppHost NuGet package and installed as an SDK pack
-#include <nethost.h>
+#include "libs\nethost\nethost.h"
 
 // Header files copied from https://github.com/dotnet/core-setup
-#include <coreclr_delegates.h>
-#include <hostfxr.h>
+#include "includes\coreclr_delegates.h"
+#include "includes\hostfxr.h"
 
-#ifdef WINDOWS
 #include <Windows.h>
 
 #define STR(s) L ## s
 #define CH(c) L ## c
 #define DIR_SEPARATOR L'\\'
-
-#else
-#include <dlfcn.h>
-#include <limits.h>
-
-#define STR(s) s
-#define CH(c) c
-#define DIR_SEPARATOR '/'
-#define MAX_PATH PATH_MAX
-
-#endif
 
 using string_t = std::basic_string<char_t>;
 
@@ -49,22 +37,15 @@ namespace
     load_assembly_and_get_function_pointer_fn get_dotnet_load_assembly(const char_t *assembly);
 }
 
-#if defined(WINDOWS)
+
 int __cdecl wmain(int argc, wchar_t *argv[])
-#else
-int main(int argc, char *argv[])
-#endif
 {
     // Get the current executable's directory
     // This sample assumes the managed assembly to load and its runtime configuration file are next to the host
     char_t host_path[MAX_PATH];
-#if WINDOWS
+
     auto size = ::GetFullPathNameW(argv[0], sizeof(host_path) / sizeof(char_t), host_path, nullptr);
     assert(size != 0);
-#else
-    auto resolved = realpath(argv[0], host_path);
-    assert(resolved != nullptr);
-#endif
 
     string_t root_path = host_path;
     auto pos = root_path.find_last_of(DIR_SEPARATOR);
@@ -160,7 +141,6 @@ namespace
     void *load_library(const char_t *);
     void *get_export(void *, const char *);
 
-#ifdef WINDOWS
     void *load_library(const char_t *path)
     {
         HMODULE h = ::LoadLibraryW(path);
@@ -173,20 +153,6 @@ namespace
         assert(f != nullptr);
         return f;
     }
-#else
-    void *load_library(const char_t *path)
-    {
-        void *h = dlopen(path, RTLD_LAZY | RTLD_LOCAL);
-        assert(h != nullptr);
-        return h;
-    }
-    void *get_export(void *h, const char *name)
-    {
-        void *f = dlsym(h, name);
-        assert(f != nullptr);
-        return f;
-    }
-#endif
 
     // <SnippetLoadHostFxr>
     // Using the nethost library, discover the location of hostfxr and get exports

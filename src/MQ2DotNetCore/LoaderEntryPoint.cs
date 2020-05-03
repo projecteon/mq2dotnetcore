@@ -22,7 +22,7 @@ namespace MQ2DotNetCore
             }
 
             LibArgs libArgs = Marshal.PtrToStructure<LibArgs>(arg);
-            Console.WriteLine($"Hello, world! from {nameof(Lib)} [count: {s_CallCount++}]");
+            Console.WriteLine($"Hello, world! from {nameof(LoaderEntryPoint)} [count: {s_CallCount++}]");
             PrintLibArgs(libArgs);
             return 0;
         }
@@ -30,13 +30,13 @@ namespace MQ2DotNetCore
         public delegate void CustomEntryPointDelegate(LibArgs libArgs);
         public static void CustomEntryPoint(LibArgs libArgs)
         {
-            Console.WriteLine($"Hello, world! from {nameof(CustomEntryPoint)} in {nameof(Lib)}");
+            Console.WriteLine($"Hello, world! from {nameof(CustomEntryPoint)} in {nameof(LoaderEntryPoint)}");
             PrintLibArgs(libArgs);
         }
 
         private static void PrintLibArgs(LibArgs libArgs)
         {
-            string message = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            string? message = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                 ? Marshal.PtrToStringUni(libArgs.Message)
                 : Marshal.PtrToStringUTF8(libArgs.Message);
 

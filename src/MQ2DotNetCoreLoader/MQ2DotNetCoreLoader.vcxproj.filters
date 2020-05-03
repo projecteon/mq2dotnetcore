@@ -11,10 +11,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="inc\coreclr_delegates.h">
+    <ClInclude Include="includes\coreclr_delegates.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="inc\hostfxr.h">
+    <ClInclude Include="includes\hostfxr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+	<ClInclude Include="libs\nesthost\nethost.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
