@@ -1,4 +1,4 @@
-using MQ2DotNet.MQ2API.DataTypes;
+﻿using MQ2DotNet.MQ2API.DataTypes;
 using RhinoBot.Base;
 using System;
 using System.Threading.Tasks;
@@ -51,7 +51,7 @@ namespace RhinoBot.LocationHelpers
 
 				case NavigationType.CurrentTarget:
 				{
-					string targetLocation;
+					string? targetLocation;
 					if (toonName == Bot.ControlToonName)
 					{
 						targetLocation = Bot.Tlo.Target.MQLoc;
@@ -311,7 +311,7 @@ namespace RhinoBot.LocationHelpers
 			// TODO: Support specifying this somehow...
 			var updateTargetCoordinatesForMovingTarget = false;
 
-			Coordinates previousCoordinates = null;
+			//Coordinates? previousCoordinates = null;
 			while (IsNearCoordinates(targetCoordinates, location.DistanceThreshold ?? 10, targetToon) == false)
 			{
 				var isNavigating = await IsNavigatingAsync(toonName).ConfigureAwait(false);

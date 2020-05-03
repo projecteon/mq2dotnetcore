@@ -1,4 +1,4 @@
-using MQ2DotNet.MQ2API;
+﻿using MQ2DotNet.MQ2API;
 using System;
 using System.Linq;
 
@@ -46,7 +46,7 @@ namespace RhinoBot.LocationHelpers
 			};
 		}
 
-		public static bool TryParseYXZ(string yxzValue, out Coordinates coordinates, MQ2 mq2 = null)
+		public static bool TryParseYXZ(string yxzValue, out Coordinates? coordinates, MQ2? mq2 = null)
 		{
 			coordinates = null;
 			if (string.IsNullOrWhiteSpace(yxzValue))

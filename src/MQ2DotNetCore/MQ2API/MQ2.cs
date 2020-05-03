@@ -87,7 +87,7 @@ namespace MQ2DotNet.MQ2API
         /// <summary>
         /// Directory of MQ2 ini files (and binaries too hopefully)
         /// </summary>
-        public string INIPath
+        public string? INIPath
         {
             get
             {

@@ -1,4 +1,4 @@
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 using MQ2DotNet.MQ2API;
 using MQ2DotNet.Program;
 using MQ2DotNet.Services;
@@ -20,9 +20,9 @@ namespace RhinoBot
 	public class RhinoBot : IProgram
 	{
 		public readonly MQ2 Mq2;
-		public readonly Chat Chat;
+		//public readonly Chat Chat;
 		public readonly Commands Commands;
-		public readonly Events Events;
+		//public readonly Events Events;
 		public readonly Spawns Spawns;
 		public readonly TLO Tlo;
 
@@ -35,12 +35,19 @@ namespace RhinoBot
 		public readonly MissionCommands MissionCommands;
 		public readonly ToonCommands ToonCommands;
 
-		public RhinoBot(MQ2 mq2, Chat chat, Commands commands, Events events, Spawns spawns, TLO tlo)
+		public RhinoBot(
+				MQ2 mq2,
+				// Chat chat ,
+				Commands commands,
+				// Events events,
+				Spawns spawns,
+				TLO tlo
+			)
 		{
 			Mq2 = mq2;
-			Chat = chat;
+			//Chat = chat;
 			Commands = commands;
-			Events = events;
+			//Events = events;
 			Spawns = spawns;
 			Tlo = tlo;
 
@@ -58,11 +65,11 @@ namespace RhinoBot
 		{
 			Mq2.WriteChatSafe($"\ag[{nameof(RhinoBot)}]\aw {nameof(Main)}(..) is executing...");
 
-			Events.OnChatMQ2 += (s, e) =>
-			{
-				if (e == "[MQ2] Hello")
-					Mq2.WriteChat("Hello yourself");
-			};
+			//Events.OnChatMQ2 += (s, e) =>
+			//{
+			//	if (e == "[MQ2] Hello")
+			//		Mq2.WriteChat("Hello yourself");
+			//};
 
 			Commands.AddAsyncCommand("/formgroup", async commandArgs => await GroupCommands.FormGroupAsync(commandArgs).ConfigureAwait(false));
 			Commands.AddAsyncCommand("/navto", async commandArgs => await LocationCommands.NavigateToLocationAsync(commandArgs).ConfigureAwait(false));
@@ -98,7 +105,7 @@ namespace RhinoBot
 
 			// TODO: Try configuring DanNet and make this faster (use observables?)
 
-			string variablesResult = null;
+			string? variablesResult = null;
 			bool wasFound = false;
 			try
 			{
@@ -138,7 +145,8 @@ namespace RhinoBot
 						return true;
 					});
 
-					var waitForOutputTask = Chat.WaitForMQ2(doesChatLineMatch, 2000);
+					//var waitForOutputTask = Chat.WaitForMQ2(doesChatLineMatch, 2000);
+					var waitForOutputTask = Task.CompletedTask;
 
 					// no parse on our toon, tell the remote toon to echo the value(s) back to us and we'll parse it out of the chat line
 					var echoCommand = $"/noparse /bct {toonName} //bct {ControlToonName} /echo {variablePrefix}={variableValuesExpression}";

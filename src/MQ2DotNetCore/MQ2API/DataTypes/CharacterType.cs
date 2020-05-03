@@ -1383,12 +1383,12 @@ namespace MQ2DotNet.MQ2API.DataTypes
         /// <summary>
         /// Blocked buff by index, valid index are 1 - 40
         /// </summary>
-        public IndexedMember<SpellType, int> BlockedBuff { get; }
+        //public IndexedMember<SpellType, int>? BlockedBuff { get; }
 
         /// <summary>
         /// Blocked pet buff by index, valid index are 1 - 40
         /// </summary>
-        public IndexedMember<SpellType, int> BlockedPetBuff { get; }
+        //public IndexedMember<SpellType, int>? BlockedPetBuff { get; }
 
         /// <summary>
         /// Fear debuff if the target has one

@@ -1,4 +1,4 @@
-using MQ2DotNet.MQ2API.DataTypes;
+﻿using MQ2DotNet.MQ2API.DataTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -191,7 +191,7 @@ namespace RhinoBot.GroupHelpers
 			var acceptInviteCount = 0;
 
 			// Multi-threading issue or bug with index access that causes this to return the wrong person
-			GroupMemberType nextGroupMember = Bot.Tlo.Group.Member[groupMemberNameToAccept];
+			GroupMemberType? nextGroupMember = Bot.Tlo.Group.Member[groupMemberNameToAccept];
 
 			var isCorrectGroupMember = nextGroupMember?.Name == groupMemberNameToAccept;
 			LogDebug($"Inside {nameof(GroupCommands)}.{nameof(TryAcceptInviteAsync)}(..) for {groupMemberNameToAccept}, isCorrectGroupMember: {isCorrectGroupMember}");

@@ -103,7 +103,7 @@ namespace MQ2DotNet.Services
                         // When an async command is executed, instead of calling the handler directly, a task is created to await the handler
                         // As I understand it, this basically means the handler will be posted as a continuation to EventLoopContext, and run on the next DoEvents()
                         var task = handler(GetArgs(buffer).ToArray());
-                        Task.Factory.StartNew(async () => await task, CancellationToken.None, TaskCreationOptions.None,
+                        Task.Factory.StartNew(async () => await task.ConfigureAwait(false), CancellationToken.None, TaskCreationOptions.None,
                             TaskScheduler.FromCurrentSynchronizationContext());
                     }
                     catch (Exception e)

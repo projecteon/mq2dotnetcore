@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using RhinoBot.Base;
 using RhinoBot.GroupHelpers;
 using RhinoBot.LocationHelpers;
@@ -9,7 +9,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace RhinoBot.Configs
 {
@@ -23,9 +22,9 @@ namespace RhinoBot.Configs
 		// TODO: Use file watch change tokens to detect if a config file is modified and 
 		// to invalidate or reload the cached config object
 
-		protected GroupsConfiguration _groupsConfiguration;
+		protected GroupsConfiguration? _groupsConfiguration;
 
-		public GroupsConfiguration GetGroupsConfiguration(bool forceReload = false)
+		public GroupsConfiguration? GetGroupsConfiguration(bool forceReload = false)
 		{
 			try
 			{
@@ -45,7 +44,7 @@ namespace RhinoBot.Configs
 			}
 		}
 
-		public List<ToonAction> GetMissionActions(string missionName, bool forceReload = false)
+		public List<ToonAction?>? GetMissionActions(string missionName, bool forceReload = false)
 		{
 			var missionsConfiguration = GetMissionsConfiguration(forceReload);
 			if (missionsConfiguration?.Missions == null)
@@ -63,9 +62,9 @@ namespace RhinoBot.Configs
 			return null;
 		}
 
-		protected MissionsConfiguration _missionsConfiguration;
+		protected MissionsConfiguration? _missionsConfiguration;
 
-		public MissionsConfiguration GetMissionsConfiguration(bool forceReload = false)
+		public MissionsConfiguration? GetMissionsConfiguration(bool forceReload = false)
 		{
 			try
 			{
@@ -86,9 +85,9 @@ namespace RhinoBot.Configs
 		}
 
 
-		protected ConcurrentDictionary<string, LocationSettings> _namedLocations;
+		protected ConcurrentDictionary<string, LocationSettings>? _namedLocations;
 
-		public ConcurrentDictionary<string, LocationSettings> GetNamedLocations(bool forceReload = false)
+		public ConcurrentDictionary<string, LocationSettings>? GetNamedLocations(bool forceReload = false)
 		{
 			try
 			{
@@ -108,7 +107,7 @@ namespace RhinoBot.Configs
 			}
 		}
 
-		public ToonAction GetNamedAction(string actionName, bool forceReload = false)
+		public ToonAction? GetNamedAction(string actionName, bool forceReload = false)
 		{
 			if (string.IsNullOrEmpty(actionName))
 			{
@@ -121,7 +120,7 @@ namespace RhinoBot.Configs
 				return null;
 			}
 
-			if (actionsConfiguration.Actions.TryGetValue(actionName, out var toonAction)) 
+			if (actionsConfiguration.Actions.TryGetValue(actionName, out var toonAction))
 			{
 				return toonAction;
 			}
@@ -129,9 +128,9 @@ namespace RhinoBot.Configs
 			return null;
 		}
 
-		private ToonActionsConfiguration _toonActionsConfiguration;
+		private ToonActionsConfiguration? _toonActionsConfiguration;
 
-		public ToonActionsConfiguration GetNamedActionsConfiguration(bool forceReload = false)
+		public ToonActionsConfiguration? GetNamedActionsConfiguration(bool forceReload = false)
 		{
 			try
 			{

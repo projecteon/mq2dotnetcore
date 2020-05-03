@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace RhinoBot.GroupHelpers
 {
@@ -10,9 +10,9 @@ namespace RhinoBot.GroupHelpers
 		// Default constructor for de-serialization support
 		public GroupSettings() { }
 
-		public string Leader { get; set; }
-		public string MainTank { get; set; }
-		public ICollection<string> Members { get; set; }
-		public string Name { get; set; }
+		public string? Leader { get; set; }
+		public string? MainTank { get; set; }
+		public ICollection<string>? Members { get; set; }
+		public string? Name { get; set; }
 	}
 }

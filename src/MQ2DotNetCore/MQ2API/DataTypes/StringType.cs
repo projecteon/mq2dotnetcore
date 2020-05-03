@@ -11,7 +11,7 @@ namespace MQ2DotNet.MQ2API.DataTypes
     [MQ2Type("string")]
     public class StringType : MQ2DataType
     {
-        private string _string;
+        private string? _string;
 
         internal StringType(MQ2TypeFactory mq2TypeFactory, MQ2TypeVar typeVar) : base(mq2TypeFactory, typeVar)
         {
@@ -24,7 +24,7 @@ namespace MQ2DotNet.MQ2API.DataTypes
         /// </summary>
         /// <param name="typeVar"></param>
         /// <returns></returns>
-        public static implicit operator string(StringType typeVar)
+        public static implicit operator string?(StringType? typeVar)
         {
             return typeVar?._string;
         }

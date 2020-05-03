@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 
 namespace RhinoBot.Base
@@ -7,7 +7,7 @@ namespace RhinoBot.Base
 	{
 		public static readonly FileVersionInfo AssemblyFileVersionInfo;
 		public static readonly string AssemblyLocation;
-		public static readonly Version AssemblyVersion;
+		public static readonly Version? AssemblyVersion;
 
 		static RhinoBotConstants()
 		{

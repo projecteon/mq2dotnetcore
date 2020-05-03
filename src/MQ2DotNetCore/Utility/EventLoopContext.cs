@@ -11,16 +11,16 @@ namespace MQ2DotNet.Utility
     /// </summary>
     public class EventLoopContext : SynchronizationContext
     {
-        private readonly ConcurrentQueue<KeyValuePair<SendOrPostCallback, object>> _queue = new ConcurrentQueue<KeyValuePair<SendOrPostCallback, object>>();
+        private readonly ConcurrentQueue<KeyValuePair<SendOrPostCallback, object?>> _queue = new ConcurrentQueue<KeyValuePair<SendOrPostCallback, object?>>();
 
         /// <inheritdoc />
-        public override void Post(SendOrPostCallback d, object state)
+        public override void Post(SendOrPostCallback d, object? state)
         {
-            _queue.Enqueue(new KeyValuePair<SendOrPostCallback, object>(d, state));
+            _queue.Enqueue(new KeyValuePair<SendOrPostCallback, object?>(d, state));
         }
 
         /// <inheritdoc />
-        public override void Send(SendOrPostCallback d, object state)
+        public override void Send(SendOrPostCallback d, object? state)
         {
             throw new NotSupportedException();
         }
@@ -36,7 +36,7 @@ namespace MQ2DotNet.Utility
             void Action()
             {
                 // Any continuations currently in the queue get removed and inserted into a list
-                var continuations = new List<KeyValuePair<SendOrPostCallback, object>>();
+                var continuations = new List<KeyValuePair<SendOrPostCallback, object?>>();
                 while (_queue.TryDequeue(out var continuation))
                     continuations.Add(continuation);
 
