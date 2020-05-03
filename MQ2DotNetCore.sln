@@ -3,46 +3,103 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29709.97
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{127E99F2-F158-40FB-8228-C06B655FB3EB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MQ2DotNet", "MQ2DotNet\MQ2DotNet.csproj", "{158B70BD-4F02-4A0B-9F8C-B56E9E422B24}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MQ2DotNetLoader", "MQ2DotNetLoader\MQ2DotNetLoader.vcxproj", "{40EA8037-3522-40CC-BB01-C666B8865E21}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{3DD7C4F9-0841-45EC-AD46-8D369F435779}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestPlugin", "TestPlugin\TestPlugin.csproj", "{C02C1815-2202-405B-B181-ACC906572AFB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RhinoBot", "TestProgram\RhinoBot.csproj", "{0FF0A7A7-5DA2-4E09-9544-1F71A437AA37}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C36835E5-7DE7-4313-8014-50FE8792CF13}"
 	ProjectSection(SolutionItems) = preProject
-		.editorconfig = .editorconfig
 		.gitignore = .gitignore
-		directory.build.props = directory.build.props
+		.gitlab-ci.yml = .gitlab-ci.yml
 		LICENSE = LICENSE
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{A3A9E0E9-9710-4125-9546-6F7388F1A94D}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{C928F605-2C90-4CA5-8665-837A422BD503}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MQ2DotNetCore", "src\MQ2DotNetCore\MQ2DotNetCore.csproj", "{265ED3E0-400D-499D-A85B-D89E624181F9}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MQ2DotNetCoreLoader", "src\MQ2DotNetCoreLoader\MQ2DotNetCoreLoader.vcxproj", "{B99BC289-621D-4DB6-A964-2D869F8E0DD3}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
 		Debug|x86 = Debug|x86
+		MQ2DotNet-Debug|Any CPU = MQ2DotNet-Debug|Any CPU
+		MQ2DotNet-Debug|x86 = MQ2DotNet-Debug|x86
+		MQ2DotNet-Release|Any CPU = MQ2DotNet-Release|Any CPU
+		MQ2DotNet-Release|x86 = MQ2DotNet-Release|x86
+		Release|Any CPU = Release|Any CPU
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{265ED3E0-400D-499D-A85B-D89E624181F9}.Debug|x86.ActiveCfg = Debug|x86
-		{265ED3E0-400D-499D-A85B-D89E624181F9}.Debug|x86.Build.0 = Debug|x86
-		{265ED3E0-400D-499D-A85B-D89E624181F9}.Release|x86.ActiveCfg = Release|x86
-		{265ED3E0-400D-499D-A85B-D89E624181F9}.Release|x86.Build.0 = Release|x86
-		{B99BC289-621D-4DB6-A964-2D869F8E0DD3}.Debug|x86.ActiveCfg = Debug|Win32
-		{B99BC289-621D-4DB6-A964-2D869F8E0DD3}.Debug|x86.Build.0 = Debug|Win32
-		{B99BC289-621D-4DB6-A964-2D869F8E0DD3}.Release|x86.ActiveCfg = Release|Win32
-		{B99BC289-621D-4DB6-A964-2D869F8E0DD3}.Release|x86.Build.0 = Release|Win32
+		{158B70BD-4F02-4A0B-9F8C-B56E9E422B24}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{158B70BD-4F02-4A0B-9F8C-B56E9E422B24}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{158B70BD-4F02-4A0B-9F8C-B56E9E422B24}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{158B70BD-4F02-4A0B-9F8C-B56E9E422B24}.Debug|x86.Build.0 = Debug|Any CPU
+		{158B70BD-4F02-4A0B-9F8C-B56E9E422B24}.MQ2DotNet-Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{158B70BD-4F02-4A0B-9F8C-B56E9E422B24}.MQ2DotNet-Debug|Any CPU.Build.0 = Debug|Any CPU
+		{158B70BD-4F02-4A0B-9F8C-B56E9E422B24}.MQ2DotNet-Debug|x86.ActiveCfg = Debug|Any CPU
+		{158B70BD-4F02-4A0B-9F8C-B56E9E422B24}.MQ2DotNet-Debug|x86.Build.0 = Debug|Any CPU
+		{158B70BD-4F02-4A0B-9F8C-B56E9E422B24}.MQ2DotNet-Release|Any CPU.ActiveCfg = Release|Any CPU
+		{158B70BD-4F02-4A0B-9F8C-B56E9E422B24}.MQ2DotNet-Release|Any CPU.Build.0 = Release|Any CPU
+		{158B70BD-4F02-4A0B-9F8C-B56E9E422B24}.MQ2DotNet-Release|x86.ActiveCfg = Release|Any CPU
+		{158B70BD-4F02-4A0B-9F8C-B56E9E422B24}.MQ2DotNet-Release|x86.Build.0 = Release|Any CPU
+		{158B70BD-4F02-4A0B-9F8C-B56E9E422B24}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{158B70BD-4F02-4A0B-9F8C-B56E9E422B24}.Release|Any CPU.Build.0 = Release|Any CPU
+		{158B70BD-4F02-4A0B-9F8C-B56E9E422B24}.Release|x86.ActiveCfg = Release|Any CPU
+		{158B70BD-4F02-4A0B-9F8C-B56E9E422B24}.Release|x86.Build.0 = Release|Any CPU
+		{40EA8037-3522-40CC-BB01-C666B8865E21}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{40EA8037-3522-40CC-BB01-C666B8865E21}.Debug|Any CPU.Build.0 = Debug|Win32
+		{40EA8037-3522-40CC-BB01-C666B8865E21}.Debug|x86.ActiveCfg = Debug|Win32
+		{40EA8037-3522-40CC-BB01-C666B8865E21}.Debug|x86.Build.0 = Debug|Win32
+		{40EA8037-3522-40CC-BB01-C666B8865E21}.MQ2DotNet-Debug|Any CPU.ActiveCfg = Debug|Win32
+		{40EA8037-3522-40CC-BB01-C666B8865E21}.MQ2DotNet-Debug|x86.ActiveCfg = Debug|Win32
+		{40EA8037-3522-40CC-BB01-C666B8865E21}.MQ2DotNet-Debug|x86.Build.0 = Debug|Win32
+		{40EA8037-3522-40CC-BB01-C666B8865E21}.MQ2DotNet-Release|Any CPU.ActiveCfg = Release|Win32
+		{40EA8037-3522-40CC-BB01-C666B8865E21}.MQ2DotNet-Release|x86.ActiveCfg = Release|Win32
+		{40EA8037-3522-40CC-BB01-C666B8865E21}.MQ2DotNet-Release|x86.Build.0 = Release|Win32
+		{40EA8037-3522-40CC-BB01-C666B8865E21}.Release|Any CPU.ActiveCfg = Release|Win32
+		{40EA8037-3522-40CC-BB01-C666B8865E21}.Release|Any CPU.Build.0 = Release|Win32
+		{40EA8037-3522-40CC-BB01-C666B8865E21}.Release|x86.ActiveCfg = Release|Win32
+		{40EA8037-3522-40CC-BB01-C666B8865E21}.Release|x86.Build.0 = Release|Win32
+		{C02C1815-2202-405B-B181-ACC906572AFB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C02C1815-2202-405B-B181-ACC906572AFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C02C1815-2202-405B-B181-ACC906572AFB}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C02C1815-2202-405B-B181-ACC906572AFB}.Debug|x86.Build.0 = Debug|Any CPU
+		{C02C1815-2202-405B-B181-ACC906572AFB}.MQ2DotNet-Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C02C1815-2202-405B-B181-ACC906572AFB}.MQ2DotNet-Debug|x86.ActiveCfg = Debug|Any CPU
+		{C02C1815-2202-405B-B181-ACC906572AFB}.MQ2DotNet-Debug|x86.Build.0 = Debug|Any CPU
+		{C02C1815-2202-405B-B181-ACC906572AFB}.MQ2DotNet-Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C02C1815-2202-405B-B181-ACC906572AFB}.MQ2DotNet-Release|x86.ActiveCfg = Release|Any CPU
+		{C02C1815-2202-405B-B181-ACC906572AFB}.MQ2DotNet-Release|x86.Build.0 = Release|Any CPU
+		{C02C1815-2202-405B-B181-ACC906572AFB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C02C1815-2202-405B-B181-ACC906572AFB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C02C1815-2202-405B-B181-ACC906572AFB}.Release|x86.ActiveCfg = Release|Any CPU
+		{C02C1815-2202-405B-B181-ACC906572AFB}.Release|x86.Build.0 = Release|Any CPU
+		{0FF0A7A7-5DA2-4E09-9544-1F71A437AA37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FF0A7A7-5DA2-4E09-9544-1F71A437AA37}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0FF0A7A7-5DA2-4E09-9544-1F71A437AA37}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0FF0A7A7-5DA2-4E09-9544-1F71A437AA37}.Debug|x86.Build.0 = Debug|Any CPU
+		{0FF0A7A7-5DA2-4E09-9544-1F71A437AA37}.MQ2DotNet-Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FF0A7A7-5DA2-4E09-9544-1F71A437AA37}.MQ2DotNet-Debug|x86.ActiveCfg = Debug|Any CPU
+		{0FF0A7A7-5DA2-4E09-9544-1F71A437AA37}.MQ2DotNet-Debug|x86.Build.0 = Debug|Any CPU
+		{0FF0A7A7-5DA2-4E09-9544-1F71A437AA37}.MQ2DotNet-Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0FF0A7A7-5DA2-4E09-9544-1F71A437AA37}.MQ2DotNet-Release|x86.ActiveCfg = Release|Any CPU
+		{0FF0A7A7-5DA2-4E09-9544-1F71A437AA37}.MQ2DotNet-Release|x86.Build.0 = Release|Any CPU
+		{0FF0A7A7-5DA2-4E09-9544-1F71A437AA37}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0FF0A7A7-5DA2-4E09-9544-1F71A437AA37}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0FF0A7A7-5DA2-4E09-9544-1F71A437AA37}.Release|x86.ActiveCfg = Release|Any CPU
+		{0FF0A7A7-5DA2-4E09-9544-1F71A437AA37}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{265ED3E0-400D-499D-A85B-D89E624181F9} = {A3A9E0E9-9710-4125-9546-6F7388F1A94D}
-		{B99BC289-621D-4DB6-A964-2D869F8E0DD3} = {A3A9E0E9-9710-4125-9546-6F7388F1A94D}
+		{C02C1815-2202-405B-B181-ACC906572AFB} = {3DD7C4F9-0841-45EC-AD46-8D369F435779}
+		{0FF0A7A7-5DA2-4E09-9544-1F71A437AA37} = {3DD7C4F9-0841-45EC-AD46-8D369F435779}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {1B7D225D-23AB-40FB-8513-CEB1E9F31091}
+		SolutionGuid = {3A5F6FC6-8612-4587-9706-DC0A4B559E22}
 	EndGlobalSection
 EndGlobal

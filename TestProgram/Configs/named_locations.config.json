@@ -1,0 +1,9 @@
+{
+	"FileVersion": "1.0.0",
+	"WarMachinesStartPoint": {
+		"Name": "WarMachinesStartPoint",
+		"NavigationType": "SpawnSearch",
+		"Value": "npc Clockwork_Commander_Widgetsworth00",
+		"ZoneName": "Lavastorm"
+	}
+}
