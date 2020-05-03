@@ -93,7 +93,7 @@ namespace MQ2DotNet
 		private static readonly string _logFilePath = Path.Combine(AssemblyInformation.AssemblyLocation, "debug.log");
 		private static void LogToFile(string message, [CallerMemberName] string? callerMemberName = null)
 		{
-			File.AppendAllText(_logFilePath, $"[{DateTime.Now}  {nameof(LoaderEntryPoint)}.{callerMemberName}] {message}\n");
+			File.AppendAllText(_logFilePath, $"[{DateTime.Now}  {nameof(LoaderEntryPoint)}.{callerMemberName}]  {message}\n");
 		}
 
 		//private static ReadOnlyDictionary<string, PluginAppDomain> Plugins => new ReadOnlyDictionary<string, PluginAppDomain>(_appDomains
@@ -112,34 +112,41 @@ namespace MQ2DotNet
 		//	new ReadOnlyDictionary<string, ScriptAppDomain>(ScriptDomains.Where(d => d.Active).ToDictionary(s => s.Name, s => s));
 
 		/// <summary>
-		/// Entrypoint, called by MQ2DotNetLoader
+		/// Entrypoint method called by MQ2DotNetCoreLoader.
 		/// </summary>
-		/// <param name="arg"></param>
-		/// <returns></returns>
+		/// <param name="arg">A pointer to the args (can be marshalled but we don't use it, just matching the hostfxr/coreclr delegate default signature)</param>
+		/// <param name="argLength">The size of the arguments.</param>
+		/// <returns>A return code: zero for success, 1 for any exceptions.</returns>
 		[PublicAPI]
-		public static int InitializePlugin(string arg)
+		public static int InitializePlugin(IntPtr arg, int argLength)
 		{
 			// This will be the first managed function that gets called. 
 			try
 			{
 				// MQ2DotNet.dll exports function pointers that it then calls when the corresponding plugin function is called
 				// Here we set them to our managed functions in this class
-				IntPtr hDll = NativeMethods.LoadLibrary("MQ2DotNetLoader.dll");
-				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(hDll, "g_pfShutdownPlugin"), Marshal.GetFunctionPointerForDelegate(_shutdownPlugin));
-				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(hDll, "g_pfOnCleanUI"), Marshal.GetFunctionPointerForDelegate(_onCleanUI));
-				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(hDll, "g_pfOnReloadUI"), Marshal.GetFunctionPointerForDelegate(_onReloadUI));
-				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(hDll, "g_pfOnDrawHUD"), Marshal.GetFunctionPointerForDelegate(_onDrawHUD));
-				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(hDll, "g_pfSetGameState"), Marshal.GetFunctionPointerForDelegate(_setGameState));
-				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(hDll, "g_pfOnPulse"), Marshal.GetFunctionPointerForDelegate(_onPulse));
-				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(hDll, "g_pfOnIncomingChat"), Marshal.GetFunctionPointerForDelegate(_onIncomingChat));
-				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(hDll, "g_pfOnWriteChatColor"), Marshal.GetFunctionPointerForDelegate(_onWriteChatColor));
-				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(hDll, "g_pfOnAddSpawn"), Marshal.GetFunctionPointerForDelegate(_onAddSpawn));
-				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(hDll, "g_pfOnRemoveSpawn"), Marshal.GetFunctionPointerForDelegate(_onRemoveSpawn));
-				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(hDll, "g_pfOnAddGroundItem"), Marshal.GetFunctionPointerForDelegate(_onAddGroundItem));
-				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(hDll, "g_pfOnRemoveGroundItem"), Marshal.GetFunctionPointerForDelegate(_onRemoveGroundItem));
-				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(hDll, "g_pfBeginZone"), Marshal.GetFunctionPointerForDelegate(_beginZone));
-				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(hDll, "g_pfEndZone"), Marshal.GetFunctionPointerForDelegate(_endZone));
-				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(hDll, "g_pfOnZoned"), Marshal.GetFunctionPointerForDelegate(_onZoned));
+				var thisAssemblyFolder = Directory.GetParent(AssemblyInformation.AssemblyLocation);
+				var rootMQ2Folder = thisAssemblyFolder.Parent;
+				var loaderLibraryPath = Path.Combine(rootMQ2Folder.FullName, "MQ2DotNetLoader.dll");
+
+				LogToFile($"Attempting to load the MQ2DotNetCoreLoader.dll from: {loaderLibraryPath}");
+				IntPtr loaderPluginDllHandle = NativeMethods.LoadLibrary(loaderLibraryPath);
+
+				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(loaderPluginDllHandle, "g_pfShutdownPlugin"), Marshal.GetFunctionPointerForDelegate(_shutdownPlugin));
+				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(loaderPluginDllHandle, "g_pfOnCleanUI"), Marshal.GetFunctionPointerForDelegate(_onCleanUI));
+				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(loaderPluginDllHandle, "g_pfOnReloadUI"), Marshal.GetFunctionPointerForDelegate(_onReloadUI));
+				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(loaderPluginDllHandle, "g_pfOnDrawHUD"), Marshal.GetFunctionPointerForDelegate(_onDrawHUD));
+				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(loaderPluginDllHandle, "g_pfSetGameState"), Marshal.GetFunctionPointerForDelegate(_setGameState));
+				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(loaderPluginDllHandle, "g_pfOnPulse"), Marshal.GetFunctionPointerForDelegate(_onPulse));
+				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(loaderPluginDllHandle, "g_pfOnIncomingChat"), Marshal.GetFunctionPointerForDelegate(_onIncomingChat));
+				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(loaderPluginDllHandle, "g_pfOnWriteChatColor"), Marshal.GetFunctionPointerForDelegate(_onWriteChatColor));
+				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(loaderPluginDllHandle, "g_pfOnAddSpawn"), Marshal.GetFunctionPointerForDelegate(_onAddSpawn));
+				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(loaderPluginDllHandle, "g_pfOnRemoveSpawn"), Marshal.GetFunctionPointerForDelegate(_onRemoveSpawn));
+				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(loaderPluginDllHandle, "g_pfOnAddGroundItem"), Marshal.GetFunctionPointerForDelegate(_onAddGroundItem));
+				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(loaderPluginDllHandle, "g_pfOnRemoveGroundItem"), Marshal.GetFunctionPointerForDelegate(_onRemoveGroundItem));
+				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(loaderPluginDllHandle, "g_pfBeginZone"), Marshal.GetFunctionPointerForDelegate(_beginZone));
+				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(loaderPluginDllHandle, "g_pfEndZone"), Marshal.GetFunctionPointerForDelegate(_endZone));
+				Marshal.WriteIntPtr(NativeMethods.GetProcAddress(loaderPluginDllHandle, "g_pfOnZoned"), Marshal.GetFunctionPointerForDelegate(_onZoned));
 
 /*
 #if DEBUG
@@ -164,7 +171,8 @@ namespace MQ2DotNet
 				// Load any plugins that are set to autoload. Fuck ini files
 				try
 				{
-					foreach (Match? match in Regex.Matches(File.ReadAllText(_iniFilePath), @"(?<name>\w+)=1"))
+					var iniFileContents = File.ReadAllText(_iniFilePath);
+					foreach (Match? match in Regex.Matches(iniFileContents, @"(?<name>\w+)=1"))
 					{
 						if (match != null)
 						{
@@ -173,15 +181,17 @@ namespace MQ2DotNet
 					}
 
 				}
-				catch (FileNotFoundException)
+				catch (FileNotFoundException fileNotFoundException)
 				{
 					// It's OK if this doesn't exist, it gets created automatically by WritePrivateProfile and this is the only place it gets read
+					LogToFile($" Error loading plugins:\n\n{fileNotFoundException.ToString()}");
 				}
 
 				return 0;
 			}
-			catch (Exception)
+			catch (Exception exc)
 			{
+				LogToFile($" Error initializing the plugin entry point:\n\n{exc.ToString()}");
 				return 1;
 			}
 		}

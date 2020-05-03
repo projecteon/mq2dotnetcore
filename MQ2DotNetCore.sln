@@ -17,7 +17,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{3DD7C4F9-084
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MQ2DotNetCore", "src\MQ2DotNetCore\MQ2DotNetCore.csproj", "{CBF094BF-28C9-4764-B7CB-E180C020DB2E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MQ2DotNetLoaderCore", "src\MQ2DotNetLoaderCore\MQ2DotNetLoaderCore.vcxproj", "{40EA8037-3522-40CC-BB01-C666B8865E21}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MQ2DotNetCoreLoader", "src\MQ2DotNetCoreLoader\MQ2DotNetCoreLoader.vcxproj", "{40EA8037-3522-40CC-BB01-C666B8865E21}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RhinoBot", "src\RhinoBot\RhinoBot.csproj", "{9CCA8010-D875-4C39-A892-D570E7B6813C}"
 EndProject
