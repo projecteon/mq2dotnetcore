@@ -21,7 +21,7 @@ namespace MQ2DotNet
     /// <summary>
     /// Class containing functions for MQ2DotNetLoader to call from the regular plugin callbacks
     /// </summary>
-    public static class PluginStub
+    public static class LoaderEntryPoint
     {
         #region Delegates/typedefs
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

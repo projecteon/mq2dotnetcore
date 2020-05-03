@@ -1,5 +1,5 @@
 #define TEST
-#include "../../MQ2Plugin.h"
+#include "../../../MQ2Plugin.h"
 #include <strsafe.h>
 #include <metahost.h>
 #import <mscorlib.tlb> raw_interfaces_only				\
@@ -12,7 +12,7 @@
 //using namespace mscorlib;
 
 PLUGIN_VERSION(0.1);
-PreSetup("MQ2DotNetLoader");
+PreSetup("MQ2DotNetLoaderCore");
 
 // COM smart pointer typedefs
 _COM_SMARTPTR_TYPEDEF(ICLRMetaHost, IID_ICLRMetaHost);
@@ -68,16 +68,16 @@ PLUGIN_API VOID InitializePlugin(VOID)
 		DWORD returnValue;
 		DWORD hr = g_pRuntimeHost->ExecuteInDefaultAppDomain(g_wzStubPath, L"MQ2DotNet.PluginStub", L"InitializePlugin", L"", &returnValue);
 		if (FAILED(hr))
-			WriteChatf("[MQ2DotNetLoader] RegisterCallbacks failed, HRESULT 0x%08lx", hr);
+			WriteChatf("[MQ2DotNetLoaderCore] RegisterCallbacks failed, HRESULT 0x%08lx", hr);
 		else
 			if (FAILED(returnValue))
-				WriteChatf("[MQ2DotNetLoader] Failed to register callbacks");
+				WriteChatf("[MQ2DotNetLoaderCore] Failed to register callbacks");
 			else
-				WriteChatf("[MQ2DotNetLoader] CLR loaded successfully");
+				WriteChatf("[MQ2DotNetLoaderCore] CLR loaded successfully");
 	}
 	else
 	{
-		WriteChatf("[MQ2DotNetLoader] CLR failed to load");
+		WriteChatf("[MQ2DotNetLoaderCore] CLR failed to load");
 	}
 }
 
@@ -198,10 +198,10 @@ bool LoadCLR()
 		return false;
 	}
 
-	// Check if the specified runtime can be loaded into the process. This 
-	// method will take into account other runtimes that may already be 
-	// loaded into the process and set pbLoadable to TRUE if this runtime can 
-	// be loaded in an in-process side-by-side fashion. 
+	// Check if the specified runtime can be loaded into the process. This
+	// method will take into account other runtimes that may already be
+	// loaded into the process and set pbLoadable to TRUE if this runtime can
+	// be loaded in an in-process side-by-side fashion.
 	BOOL fLoadable;
 	hr = g_pRuntimeInfo->IsLoadable(&fLoadable);
 	if (FAILED(hr))

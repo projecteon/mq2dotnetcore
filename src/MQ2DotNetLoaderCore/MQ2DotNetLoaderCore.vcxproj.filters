@@ -15,12 +15,12 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\MQ2Plugin.h">
+    <ClInclude Include="..\..\..\MQ2Plugin.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MQ2DotNetLoader.cpp">
+    <ClCompile Include="MQ2DotNetLoaderCore.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
