@@ -68,7 +68,7 @@ dotnet_diagnostic.CA1067.severity    = suggestion
 dotnet_diagnostic.CA1068.severity    = suggestion
 
 # Rule: (CA1303) Do not pass literals as localized parameters. Retrieve the string(s) from a resource table instead
-dotnet_diagnostic.CA1303.severity    = suggestion
+dotnet_diagnostic.CA1303.severity    = none
 dotnet_code_quality.CA1303.excluded_type_names_with_derived_types = System.Exception
 
 # Rule: (CA1304) Specify CultureInfo.
@@ -166,7 +166,7 @@ dotnet_diagnostic.CA1829.severity    = error
 dotnet_diagnostic.CA2000.severity    = error
 
 # Rule: (CA2007) Consider calling ConfigureAwait on the awaited task. Reason: Defacto thing to do. Deadlocks are bad.
-dotnet_diagnostic.CA2007.severity    = warning
+dotnet_diagnostic.CA2007.severity    = error
 
 # Rule: (CA2008) Do not create tasks without passing a TaskScheduler.
 dotnet_diagnostic.CA2008.severity    = suggestion
@@ -264,13 +264,13 @@ dotnet_diagnostic.CS8600.severity    = error
 dotnet_diagnostic.CS8601.severity    = error
 
 # Rule: (CS8602) Dereference of a possibly null reference. Reason: these should be treated as errors to ensure we don't introduce null reference exceptions.
-dotnet_diagnostic.CS8602.severity    = warning
+dotnet_diagnostic.CS8602.severity    = error
 
 # Rule: (CS8603) Possible null reference return. Reason: these should be treated as errors to ensure we don't introduce null reference exceptions.
-dotnet_diagnostic.CS8603.severity    = warning
+dotnet_diagnostic.CS8603.severity    = error
 
 # Rule: (CS8604) Possible null reference argument for parameter <parametername> in <method>. Reason: these should be treated as errors to ensure we don't introduce null reference exceptions.
-dotnet_diagnostic.CS8604.severity    = warning
+dotnet_diagnostic.CS8604.severity    = error
 
 # Rule: (CS8605) Unboxing a possibly null value. Reason: these should be treated as errors to ensure we don't introduce null reference exceptions.
 dotnet_diagnostic.CS8605.severity    = error

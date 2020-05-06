@@ -87,7 +87,11 @@ PLUGIN_API VOID InitializePlugin(VOID)
 	}
 
 	g_bLoaded = loadDotNetClrAndExecuteEntryPoint();
-	if (!g_bLoaded)
+	if (g_bLoaded)
+	{
+		WriteChatf("[MQ2DotNetCoreLoader] Successfully loaded the .net core CLR.");
+	}
+	else
 	{
 		WriteChatf("[MQ2DotNetCoreLoader] Failed to load .net CLR and/or execute the entry point method!");
 	}
@@ -105,7 +109,7 @@ PLUGIN_API VOID ShutdownPlugin(VOID)
 		g_pfShutdownPlugin();
 	}
 
-	// TODO: Determine if there is a way to unload the load libraries without crashing the process?
+	// TODO: Determine if there is a way to unload the loaded libraries (hostfxr ?) without crashing the process?
 
 	// TODO: Determine if the new hostfxr way of hosting the .net core runtime has a way it can be fully
 	// unloaded at runtime?
@@ -233,6 +237,7 @@ void logToFile(std::string message)
 
 bool loadDotNetClrAndExecuteEntryPoint()
 {
+	WriteChatf("[MQ2DotNetCoreLoader] Loading .net core runtime and entry point...");
 
 	const char_t* entryPointDotNetType = L"MQ2DotNetCore.LoaderEntryPoint, MQ2DotNetCore";
 	const char_t* entryPointMethodName = L"InitializePlugin";
@@ -243,7 +248,6 @@ bool loadDotNetClrAndExecuteEntryPoint()
 	logToFile(formatString("Entry Point Method Name: %ws", entryPointMethodName));
 
 	logToFile("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] Using nethost library to locate the hostfxr path...");
-	WriteChatf("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] Using nethost library to locate the hostfxr path...");
 
 
 	hostfxr_initialize_for_runtime_config_fn hostfxrInitializeFunctionPointer = nullptr;
@@ -257,12 +261,11 @@ bool loadDotNetClrAndExecuteEntryPoint()
 	if (getHostfxrPathReturnCode != 0)
 	{
 		logToFile(formatString("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] get_hostfxr_path(..) failed w/ return code: %d", getHostfxrPathReturnCode));
-		WriteChatf("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] get_hostfxr_path(..) failed w/ return code: %d", getHostfxrPathReturnCode);
 		return false;
 	}
 
 	logToFile(formatString("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] Loading the hostfxr library from:  %w", hostfxrPathBuffer));
-	WriteChatf("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] Loading the hostfxr library...");
+	//WriteChatf("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] Loading the hostfxr library...");
 
 	// Load hostfxr and get desired exports
 	HMODULE hostfxrLibraryHandle = ::LoadLibraryW(hostfxrPathBuffer);
@@ -276,21 +279,18 @@ bool loadDotNetClrAndExecuteEntryPoint()
 	{
 		areAllFunctionPointersSet = false;
 		logToFile("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] get_export(..) failed to locate/set the hostfxrInitializeFunctionPointer");
-		WriteChatf("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] get_export(..) failed to locate/set the hostfxrInitializeFunctionPointer");
 	}
 
 	if (!hostfxrGetRuntimeDelegateFunctionPointer || hostfxrGetRuntimeDelegateFunctionPointer == nullptr)
 	{
 		areAllFunctionPointersSet = false;
 		logToFile("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] get_export(..) failed to locate/set the hostfxrGetRuntimeDelegateFunctionPointer");
-		WriteChatf("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] get_export(..) failed to locate/set the hostfxrGetRuntimeDelegateFunctionPointer");
 	}
 
 	if (!hostfxrCloseFunctionPointer || hostfxrCloseFunctionPointer == nullptr)
 	{
 		areAllFunctionPointersSet = false;
 		logToFile("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] get_export(..) failed to locate/set the hostfxrCloseFunctionPointer");
-		WriteChatf("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] get_export(..) failed to locate/set the hostfxrCloseFunctionPointer");
 	}
 
 	if (!areAllFunctionPointersSet) {
@@ -298,7 +298,6 @@ bool loadDotNetClrAndExecuteEntryPoint()
 	}
 
 	logToFile("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] hostfxr library loaded, initializing .net core runtime...");
-	WriteChatf("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] hostfxr library loaded, initializing .net core runtime...");
 
 	// Load .NET Core
 	void* hostfxrLoadAssemblyAndGetFunctionPointer = nullptr;
@@ -307,7 +306,6 @@ bool loadDotNetClrAndExecuteEntryPoint()
 	if (hostfxrInitializeReturnCode != 0)
 	{
 		logToFile(formatString("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] The hostfxr inititialize(..) (function pointer) call returned a non zero exit code: %d!", hostfxrInitializeReturnCode));
-		WriteChatf("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] The hostfxr inititialize(..) (function pointer) call returned a non zero exit code: %d!", hostfxrInitializeReturnCode);
 		hostfxrCloseFunctionPointer(hostfxr_context);
 		return nullptr;
 	}
@@ -315,13 +313,11 @@ bool loadDotNetClrAndExecuteEntryPoint()
 	if (hostfxr_context == nullptr)
 	{
 		logToFile("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] The hostfxr inititialize(..) (function pointer) did not succeed, the hostfxr_context is equal to the nullptr value!");
-		WriteChatf("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] The hostfxr inititialize(..) (function pointer) did not succeed, the hostfxr_context is equal to the nullptr value!");
 		hostfxrCloseFunctionPointer(hostfxr_context);
 		return nullptr;
 	}
 
 	logToFile("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] Getting the hdt_load_assembly_and_get_function_pointer from the .net runtime...");
-	WriteChatf("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] Getting the hdt_load_assembly_and_get_function_pointer from the .net runtime...");
 
 	// Get the load assembly function pointer
 	int hostfxrGetDelegateFunctionPointerReturnCode = hostfxrGetRuntimeDelegateFunctionPointer(
@@ -333,7 +329,6 @@ bool loadDotNetClrAndExecuteEntryPoint()
 	if (hostfxrGetDelegateFunctionPointerReturnCode != 0)
 	{
 		logToFile(formatString("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] The hostfxr getRuntimeDelegate(..) (function pointer) call returned a non zero exit code: %d!", hostfxrGetDelegateFunctionPointerReturnCode));
-		WriteChatf("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] The hostfxr getRuntimeDelegate(..) (function pointer) call returned a non zero exit code: %d!", hostfxrGetDelegateFunctionPointerReturnCode);
 		hostfxrCloseFunctionPointer(hostfxr_context);
 		return false;
 	}
@@ -341,7 +336,6 @@ bool loadDotNetClrAndExecuteEntryPoint()
 	if (hostfxrLoadAssemblyAndGetFunctionPointer == nullptr)
 	{
 		logToFile("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] The hostfxr getRuntimeDelegate(..) (function pointer) call returned a did not succeed, the hostfxrLoadAssemblyAndGetFunctionPointer is set to a nullptr value!");
-		WriteChatf("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] The hostfxr getRuntimeDelegate(..) (function pointer) call returned a did not succeed, the hostfxrLoadAssemblyAndGetFunctionPointer is set to a nullptr value!");
 		hostfxrCloseFunctionPointer(hostfxr_context);
 		return false;
 	}
@@ -356,7 +350,6 @@ bool loadDotNetClrAndExecuteEntryPoint()
 	//custom_entry_point_fn custom = nullptr;
 
 	logToFile("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] Loading the entry point assembly and method...");
-	WriteChatf("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] Loading the entry point assembly and method...");
 
 	// Function pointer to managed delegate
 	component_entry_point_fn initializePluginFunctionPointer = nullptr;
@@ -371,20 +364,17 @@ bool loadDotNetClrAndExecuteEntryPoint()
 	);
 
 	logToFile("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] Closing the hostfxr context...");
-	WriteChatf("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] Closing the hostfxr context...");
 	hostfxrCloseFunctionPointer(hostfxr_context);
 
 	if (loadEntryPointReturnCode != 0)
 	{
 		logToFile(formatString("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] The loadEntryPointReturnCode is non zero: %d", loadEntryPointReturnCode));
-		WriteChatf("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] The loadEntryPointReturnCode is non zero: %d", loadEntryPointReturnCode);
 		return false;
 	}
 
 	if (initializePluginFunctionPointer == nullptr)
 	{
 		logToFile(formatString("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] The initializePluginFunctionPointer is set to the nullptr value!"));
-		WriteChatf("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] The initializePluginFunctionPointer is set to the nullptr value!");
 		return false;
 	}
 
@@ -402,13 +392,11 @@ bool loadDotNetClrAndExecuteEntryPoint()
 	};
 
 	logToFile(formatString("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] Calling the InitializePlugin(..) entry point method..."));
-	WriteChatf("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] Calling the InitializePlugin(..) entry point method...");
 
 	int initializePluginEntryPointMethodReturnCode = initializePluginFunctionPointer(&args, sizeof(args));
 	if (initializePluginEntryPointMethodReturnCode != 0)
 	{
 		logToFile(formatString("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] The InitializePlugin(..) entry point method returned a non zero return code: %d", initializePluginEntryPointMethodReturnCode));
-		WriteChatf("[MQ2DotNetCoreLoader - loadDotNetClrAndExecuteEntryPoint()] The InitializePlugin(..) entry point method returned a non zero return code: %d", initializePluginEntryPointMethodReturnCode);
 		return false;
 	}
 
