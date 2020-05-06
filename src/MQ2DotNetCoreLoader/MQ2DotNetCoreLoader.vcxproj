@@ -30,11 +30,11 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\Plugin.Release.props" />
+    <Import Project="$(MQ2SourceRootFolder)\Plugin.Release.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\Plugin.Debug.props" />
+    <Import Project="$(MQ2SourceRootFolder)\Plugin.Debug.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
@@ -51,28 +51,31 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions);MQ2SourceRootFolder=$(MQ2SourceRootFolder)</PreprocessorDefinitions>
       <UndefinePreprocessorDefinitions>CINTERFACE</UndefinePreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MQ2SourceRootFolder)</AdditionalIncludeDirectories>
     </ClCompile>
     <PostBuildEvent>
       <Command>
       </Command>
     </PostBuildEvent>
     <Link>
-      <AdditionalLibraryDirectories>..\..\..\Release;..\..\..\Detours\lib;$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(MQ2SourceRootFolder)\Release;$(MQ2SourceRootFolder)\Detours\lib;$(OutDir);libs\nethost-win-x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>winmm.lib;nethost.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);MQ2SourceRootFolder=$(MQ2SourceRootFolder)</PreprocessorDefinitions>
       <UndefinePreprocessorDefinitions>CINTERFACE</UndefinePreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MQ2SourceRootFolder)</AdditionalIncludeDirectories>
     </ClCompile>
     <PostBuildEvent>
       <Command>
       </Command>
     </PostBuildEvent>
     <Link>
-      <AdditionalLibraryDirectories>..\..\..\Release;..\..\..\Detours\lib;$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(MQ2SourceRootFolder)\Release;$(MQ2SourceRootFolder)\Detours\lib;$(OutDir);libs\nethost-win-x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>winmm.lib;nethost.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -86,7 +89,7 @@
     <ClInclude Include="includes\coreclr_delegates.h" />
     <ClInclude Include="includes\hostfxr.h" />
     <ClInclude Include="libs\nethost-win-x86\nethost.h" />
-    <ClInclude Include="..\..\..\MQ2Plugin.h" />
+    <ClInclude Include="$(MQ2SourceRootFolder)\MQ2Plugin.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

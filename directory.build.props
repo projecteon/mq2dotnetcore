@@ -2,6 +2,10 @@
 
 	<!-- Shared properties -->
 	<PropertyGroup>
+		<EQInstallRootFolder>C:\Users\Public\Daybreak Game Company\Installed Games\EverQuest</EQInstallRootFolder>
+		<MQ2InstallLiveRootFolder>C:\Downloads\EQ\VeryVanilla\Live\Release</MQ2InstallLiveRootFolder>
+		<MQ2SourceRootFolder>C:\Source\VeryVanilla\</MQ2SourceRootFolder>
+
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 

@@ -24,7 +24,7 @@
     <ClInclude Include="libs\nethost-win-x86\nethost.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\MQ2Plugin.h">
+    <ClInclude Include="$(MQ2SourceRootFolder)\MQ2Plugin.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -16,7 +16,7 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace MQ2DotNet
+namespace MQ2DotNetCore
 {
 	/// <summary>
 	/// Class containing functions for MQ2DotNetLoader to call from the regular plugin callbacks

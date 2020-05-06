@@ -1,6 +1,14 @@
 #define TEST
 
+#ifdef MQ2SourceRootFolder
+
+#include "MQ2Plugin.h"
+
+#else
+
 #include "../../../MQ2Plugin.h"
+
+#endif
 
 #include "libs/nethost-win-x86/nethost.h"
 
@@ -15,7 +23,7 @@
 //	rename("ReportEvent", "InteropServices_ReportEvent")
 
 
-PLUGIN_VERSION(1.0);
+PLUGIN_VERSION(0.1);
 PreSetup("MQ2DotNetCoreLoader");
 
 bool g_bLoaded{ false };
