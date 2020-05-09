@@ -10,6 +10,8 @@ namespace MQ2DotNetCore.Base
 
 		public static MQ2DotNetCoreConfiguration? GetConfiguration()
 		{
+			// TODO: Add a FileWatchHandler to detect and changes and automatically update the config?
+
 			if (_configuration != null)
 			{
 				return _configuration;
