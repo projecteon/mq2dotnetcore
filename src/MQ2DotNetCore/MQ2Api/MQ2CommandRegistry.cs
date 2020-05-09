@@ -6,14 +6,15 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.ConstrainedExecution;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace MQ2DotNetCore.MQ2Api
 {
-	public sealed class MQ2CommandRegistry : CriticalFinalizerObject, IDisposable
+	internal sealed class MQ2CommandRegistry : CriticalFinalizerObject, IDisposable
 	{
+		internal static readonly MQ2CommandRegistry Instance = new MQ2CommandRegistry();
+
 		// Hold onto a reference for the fEQCommand delegate in managed code so that it doesn't get garbage collected
 		private readonly ConcurrentDictionary<string, MQ2Main.NativeMethods.fEQCommand> _commandsDictionary =
 			new ConcurrentDictionary<string, MQ2Main.NativeMethods.fEQCommand>();
@@ -29,7 +30,7 @@ namespace MQ2DotNetCore.MQ2Api
 
 		private bool _isDisposed;
 
-		internal MQ2CommandRegistry()
+		private MQ2CommandRegistry()
 		{
 			// TODO: Determine if there is any reason for the complexity of the synchronization context that
 			// they were using...
@@ -87,14 +88,14 @@ namespace MQ2DotNetCore.MQ2Api
 
 					FileLoggingHelper.LogInformation($"Executing (synchronous) command ({commandName}) with arguments: {commandArgumentsBuffer}");
 
-					// TODO: Determine why the characterSpawnIntPtr is being thrown away here, and why it's being
-					// fetched manually using GetCharSpawn()...
-					LogCharacterSpawnPointerValues(characterSpawnIntPtr);
+					// Note: The characterSpawnIntPtr can/will change (e.g. character transitions to a new zone) so we don't want to hold
+					// onto the value when the command starts. Instead we'll use the interop MQ2.GetCharacterSpawnIntPointer(..) method
+					// to get the pointer on demand.
 
 					var arguments = StringHelper.SplitArguments(commandArgumentsBuffer).ToArray();
 
-					// TODO: Determine if there is any need for a sync context, for now we'll just queue it using the default
-					// task schedule (ThreadPool) skip awaiting it, and let the global event handler log any unhandled task
+					// TODO: Determine if there is any need for a sync context...
+					///For now we'll just queue the async tasks to run on thread pool threads using Task.Run(..)
 
 					//CancellationTokenSource cancellationTokenSourceForSubmodule;
 					//if (_submoduleCancellationTokenSourceDictionary.TryGetValue(submoduleName, out var cancellationTokenSource))
@@ -123,33 +124,6 @@ namespace MQ2DotNetCore.MQ2Api
 					//MQ2.WriteChatGeneralError($"Exception in {command}: {e}");
 				}
 			});
-		}
-
-		private static void LogCharacterSpawnPointerValues(IntPtr characterSpawnIntPtr)
-		{
-			try
-			{
-				FileLoggingHelper.LogInformation($"Character Spawn Int Pointer From Parameter: {characterSpawnIntPtr}");
-				try
-				{
-					var readOnce = Marshal.ReadIntPtr(characterSpawnIntPtr);
-					FileLoggingHelper.LogInformation($"Character Spawn Int Pointer From Parameter (Read Once): {readOnce}");
-
-					var readTwice = Marshal.ReadIntPtr(readOnce);
-					FileLoggingHelper.LogInformation($"Character Spawn Int Pointer From Parameter (Read Twice): {readTwice}");
-				}
-				catch (Exception readPointerException)
-				{
-					FileLoggingHelper.LogWarning($"{nameof(LogCharacterSpawnPointerValues)} threw an exception while attempting to read the int pointer:\n\n{readPointerException.ToString()}\n");
-				}
-
-				var characterSpawnIntegerPointer2 = MQ2.GetCharacterSpawnIntPointer();
-				FileLoggingHelper.LogInformation($"Character Spawn Int Pointer From GetCharacterSpawnIntPointer(..): {characterSpawnIntPtr}");
-			}
-			catch (Exception exc)
-			{
-				FileLoggingHelper.LogError($"{nameof(LogCharacterSpawnPointerValues)} threw an exception:\n\n{exc.ToString()}\n");
-			}
 		}
 
 

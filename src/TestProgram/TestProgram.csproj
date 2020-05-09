@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+	</PropertyGroup>
+	
+	<ItemGroup>
+		<ProjectReference Include="..\MQ2DotNetCore\MQ2DotNetCore.csproj" />
+	</ItemGroup>
+
+</Project>

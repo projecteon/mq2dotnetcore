@@ -13,9 +13,6 @@ namespace MQ2DotNetCore
 {
 	public static class LoaderEntryPoint
 	{
-		private static readonly MQ2CommandRegistry _commandRegistry = new MQ2CommandRegistry();
-		private static readonly MQ2 _mq2 = new MQ2();
-
 		public static int InitializePlugin(IntPtr arg, int argLength)
 		{
 			try
@@ -50,13 +47,13 @@ namespace MQ2DotNetCore
 
 				FileLoggingHelper.LogDebug($"Done registering delegates to the loader dll's exported function pointer addresses!");
 
-
-				_commandRegistry.AddCommand(nameof(LoaderEntryPoint), "/synctestcommand", TestCommandSync);
-				_commandRegistry.AddAsyncCommand(nameof(LoaderEntryPoint), "/asynctestcommand", TestCommandAsync);
+				FileLoggingHelper.LogDebug("Attempting to register the primary commands...");
 
 				// And command to run/end .net programs
-				//_commandRegistry.AddCommand(nameof(LoaderEntryPoint), "/netrun", NetRunCommand);
-				//_commandRegistry.AddCommand(nameof(LoaderEntryPoint), "/netend", NetEndCommand);
+				MQ2CommandRegistry.Instance.AddCommand(nameof(LoaderEntryPoint), "/netcorerun", NetRunCommand);
+				MQ2CommandRegistry.Instance.AddCommand(nameof(LoaderEntryPoint), "/netcoreend", NetEndCommand);
+
+				FileLoggingHelper.LogDebug("Done registering the primary commands.");
 
 				return 0;
 			}
@@ -94,7 +91,7 @@ namespace MQ2DotNetCore
 
 				eventArgs?.SetObserved();
 
-				_mq2.WriteChatSafe($"{nameof(HandleUnobservedTaskException)} was called. See the log file for more information.");
+				MQ2.Instance.WriteChatSafe($"{nameof(HandleUnobservedTaskException)} was called. See the log file for more information.");
 			}
 			catch (Exception exc)
 			{
@@ -102,41 +99,46 @@ namespace MQ2DotNetCore
 			}
 		}
 
-		public static void TestCommandSync(string[] commandArguments)
+		private static void NetRunCommand(string[] commandArguments)
 		{
-			try
+			if (commandArguments == null || commandArguments.Length == 0)
 			{
-				var message = $"{nameof(TestCommandSync)} is executing. [CommandArguments: {string.Join(", ", commandArguments)}] [MangedThreadId: {Thread.CurrentThread.ManagedThreadId}]";
-				FileLoggingHelper.LogDebug(message);
-				_mq2.WriteChatSafe(message);
+				MQ2.WriteChatProgram("Usage: /netcorerun <program> [<arg1> <arg2> ...]");
+				return;
 			}
-			catch (Exception exc)
+
+			var wasStarted = SubmoduleRegistry.Instance.StartProgram(commandArguments[0], commandArguments);
+			if (wasStarted)
 			{
-				FileLoggingHelper.LogError($"{nameof(TestCommandSync)} threw an exception:\n\n{exc.ToString()}");
+				FileLoggingHelper.LogDebug($"{commandArguments[0]} program started successfully");
+				MQ2.WriteChatProgram($"{commandArguments[0]} program started successfully");
+			}
+			else
+			{
+				FileLoggingHelper.LogWarning($"Failed to start {commandArguments[0]} program!");
+				MQ2.WriteChatProgramWarning($"Failed to start {commandArguments[0]} program!");
 			}
 		}
 
-		public static async Task TestCommandAsync(string[] commandArguments, CancellationToken cancellationToken)
+		private static void NetEndCommand(string[] commandArguments)
 		{
-			try
+			if (commandArguments == null || commandArguments.Length != 1)
 			{
-				var loopIndex = 0;
-				while (loopIndex < 10)
-				{
-					++loopIndex;
-					var message = $"{nameof(TestCommandAsync)} is executing loop iteration {loopIndex}. [CommandArguments: {string.Join(", ", commandArguments)}] [MangedThreadId: {Thread.CurrentThread.ManagedThreadId}]";
-
-					FileLoggingHelper.LogDebug(message);
-					_mq2.WriteChatSafe(message);
-
-
-					// Wait 5 seconds before running the next loop
-					await Task.Delay(5 * 1000).ConfigureAwait(false);
-				}
+				MQ2.WriteChatProgram("Usage: /netcoreend <program|*>");
+				return;
 			}
-			catch (Exception exc)
+
+			var programNameToStop = commandArguments[0];
+			var wasStopped = SubmoduleRegistry.Instance.StopProgram(programNameToStop);
+			if (wasStopped)
 			{
-				FileLoggingHelper.LogError($"{nameof(TestCommandAsync)} threw an exception:\n\n{exc.ToString()}");
+				FileLoggingHelper.LogDebug($"{programNameToStop} program stopped and unloaded successfully");
+				MQ2.WriteChatProgram($"{programNameToStop} program stopped and unloaded successfully");
+			}
+			else
+			{
+				FileLoggingHelper.LogWarning($"Failed to stop/unload {programNameToStop} program!");
+				MQ2.WriteChatProgramWarning($"Failed to stop/unload {programNameToStop} program!");
 			}
 		}
 

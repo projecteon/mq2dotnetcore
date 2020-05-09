@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace MQ2DotNetCore.Logging
 {
@@ -13,7 +14,7 @@ namespace MQ2DotNetCore.Logging
 	{
 		private static readonly string _logFilePath = Path.Combine(AssemblyInformation.AssemblyDirectory, "debug_entry_point.log");
 
-		internal static LogLevel GetLogLevel()
+		public static LogLevel GetLogLevel()
 		{
 			try
 			{
@@ -34,7 +35,7 @@ namespace MQ2DotNetCore.Logging
 			return LogLevel.Information;
 		}
 
-		internal static void LogCritical(string message, [CallerMemberName] string? callerMemberName = null)
+		public static void LogCritical(string message, [CallerMemberName] string? callerMemberName = null)
 		{
 			try
 			{
@@ -43,7 +44,7 @@ namespace MQ2DotNetCore.Logging
 					return;
 				}
 
-				TryAppendToFile($"[{DateTime.Now} (Critical)  {callerMemberName}]  {message}\n");
+				TryAppendToFile($"{PrefixLogEntry(LogLevel.Critical, callerMemberName)}  {message}\n");
 			}
 			catch (Exception exc)
 			{
@@ -51,7 +52,7 @@ namespace MQ2DotNetCore.Logging
 			}
 		}
 
-		internal static void LogDebug(string message, [CallerMemberName] string? callerMemberName = null)
+		public static void LogDebug(string message, [CallerMemberName] string? callerMemberName = null)
 		{
 			try
 			{
@@ -60,7 +61,7 @@ namespace MQ2DotNetCore.Logging
 					return;
 				}
 
-				TryAppendToFile($"[{DateTime.Now} (Debug)  {callerMemberName}]  {message}\n");
+				TryAppendToFile($"{PrefixLogEntry(LogLevel.Debug, callerMemberName)}  {message}\n");
 			}
 			catch (Exception exc)
 			{
@@ -68,7 +69,7 @@ namespace MQ2DotNetCore.Logging
 			}
 		}
 
-		internal static void LogError(string message, [CallerMemberName] string? callerMemberName = null)
+		public static void LogError(string message, [CallerMemberName] string? callerMemberName = null)
 		{
 			try
 			{
@@ -77,7 +78,7 @@ namespace MQ2DotNetCore.Logging
 					return;
 				}
 
-				TryAppendToFile($"[{DateTime.Now} (Error)  {callerMemberName}]  {message}\n");
+				TryAppendToFile($"{PrefixLogEntry(LogLevel.Error, callerMemberName)}  {message}\n");
 			}
 			catch (Exception exc)
 			{
@@ -85,7 +86,7 @@ namespace MQ2DotNetCore.Logging
 			}
 		}
 
-		internal static void LogInformation(string message, [CallerMemberName] string? callerMemberName = null)
+		public static void LogInformation(string message, [CallerMemberName] string? callerMemberName = null)
 		{
 			try
 			{
@@ -94,7 +95,7 @@ namespace MQ2DotNetCore.Logging
 					return;
 				}
 
-				TryAppendToFile($"[{DateTime.Now} (Information)  {callerMemberName}]  {message}\n");
+				TryAppendToFile($"{PrefixLogEntry(LogLevel.Information, callerMemberName)}  {message}\n");
 			}
 			catch (Exception exc)
 			{
@@ -102,7 +103,7 @@ namespace MQ2DotNetCore.Logging
 			}
 		}
 
-		internal static void LogTrace(string message, [CallerMemberName] string? callerMemberName = null)
+		public static void LogTrace(string message, [CallerMemberName] string? callerMemberName = null)
 		{
 			try
 			{
@@ -111,7 +112,7 @@ namespace MQ2DotNetCore.Logging
 					return;
 				}
 
-				TryAppendToFile($"[{DateTime.Now} (Trace)  {callerMemberName}]  {message}\n");
+				TryAppendToFile($"{PrefixLogEntry(LogLevel.Trace, callerMemberName)}  {message}\n");
 			}
 			catch (Exception exc)
 			{
@@ -119,7 +120,7 @@ namespace MQ2DotNetCore.Logging
 			}
 		}
 
-		internal static void LogWarning(string message, [CallerMemberName] string? callerMemberName = null)
+		public static void LogWarning(string message, [CallerMemberName] string? callerMemberName = null)
 		{
 			try
 			{
@@ -128,12 +129,17 @@ namespace MQ2DotNetCore.Logging
 					return;
 				}
 
-				TryAppendToFile($"[{DateTime.Now} (Warning)  {callerMemberName}]  {message}\n");
+				TryAppendToFile($"{PrefixLogEntry(LogLevel.Warning, callerMemberName)}  {message}\n");
 			}
 			catch (Exception exc)
 			{
 				// TODO: Anything ?
 			}
+		}
+
+		public static string PrefixLogEntry(LogLevel logLevel, string? callerMemberName)
+		{
+			return $"[{DateTime.Now} ({Thread.CurrentThread.ManagedThreadId}] ({logLevel.ToString()})  {callerMemberName}]";
 		}
 
 		private static bool TryAppendToFile(string message)

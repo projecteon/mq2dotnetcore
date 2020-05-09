@@ -85,11 +85,25 @@ namespace MQ2DotNetCore.Base
 						return false;
 					}
 
-					// isCollectible needs to be true or we won't be able to dynamically unload it with .Unload()
-					assemblyLoadContext = new AssemblyLoadContext(submoduleProgramName, true);
+					assemblyLoadContext = new SubmoduleAssemblyLoadContext(submoduleProgramName, submoduleFilePath);
 					var submoduleAssembly = assemblyLoadContext.LoadFromAssemblyPath(submoduleFilePath);
 
-					var submoduleProgramClassType = submoduleAssembly.GetType(submoduleProgramName);
+					var submoduleTypes = submoduleAssembly.GetTypes();
+					var submoduleProgramTypes = submoduleTypes
+						.Where(nextType => typeof(IMQ2Program).IsAssignableFrom(nextType))
+						.ToList();
+
+					FileLoggingHelper.LogInformation($"Found {submoduleProgramTypes.Count} {nameof(IMQ2Program)} types in the {submoduleProgramName} assembly: {string.Join(", ", submoduleProgramTypes.Select(type => type.FullName))}");
+
+					var submoduleProgramClassType = submoduleProgramTypes
+						.FirstOrDefault(nextType => nextType.Name.Contains(submoduleProgramName));
+
+					if (submoduleProgramClassType == null && submoduleProgramTypes.Count > 0)
+					{
+						FileLoggingHelper.LogWarning($"Did not find a program type with name: {submoduleProgramName}, falling back to the first {nameof(IMQ2Program)} type found.");
+						submoduleProgramClassType = submoduleProgramTypes.FirstOrDefault();
+					}	
+
 					if (submoduleProgramClassType == null)
 					{
 						throw new InvalidOperationException($"Failed to locate type {submoduleProgramName} within the assembly!");
@@ -128,48 +142,58 @@ namespace MQ2DotNetCore.Base
 			{
 				FileLoggingHelper.LogError($"{nameof(SubmoduleRegistry)}.{nameof(StartProgram)}(..) encountered an unexpected exception while trying to start submodule program: {submoduleProgramName}\n\n{exc.ToString()}");
 
-				TryDispose(cancellationTokenSource);
+				CleanupHelper.TryDispose(cancellationTokenSource);
 
 				if (submoduleProgramInstance is IDisposable disposableSubmoduleProgramInstance)
 				{
-					disposableSubmoduleProgramInstance?.Dispose();
+					CleanupHelper.TryDispose(disposableSubmoduleProgramInstance);
 				}
-
 
 				// Do our best to cleanup if an exception is thrown
-				if (assemblyLoadContext != null)
+				CleanupHelper.TryUnload(assemblyLoadContext);
+
+				return false;
+			}
+		}
+
+		internal bool StopProgram(string submoduleProgramName)
+		{
+			if (_isDisposed)
+			{
+				throw new ObjectDisposedException(nameof(SubmoduleRegistry));
+			}
+
+			try
+			{
+				if (string.IsNullOrWhiteSpace(submoduleProgramName))
 				{
-					TryUnload(assemblyLoadContext);
+					throw new ArgumentNullException(nameof(submoduleProgramName), "cannot be null, empty, or whitespace.");
 				}
 
-				return false;
-			}
-		}
+				if (!_programsDictionary.ContainsKey(submoduleProgramName))
+				{
+					FileLoggingHelper.LogInformation($"A submodule program instance is not currently loaded/running with the name: {submoduleProgramName}");
+					return false;
+				}
 
-		private static bool TryDispose(IDisposable? disposable)
-		{
-			try
-			{
-				disposable?.Dispose();
-				return true;
+				lock (_lock)
+				{
+					if (!_programsDictionary.Remove(submoduleProgramName, out var submoduleProgramWrapper)
+						|| submoduleProgramWrapper == null)
+					{
+						FileLoggingHelper.LogInformation($"A submodule program instance is not currently loaded/running with the name: {submoduleProgramName}");
+						return false;
+					}
+
+					submoduleProgramWrapper.Dispose();
+
+					return true;
+				}
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError($"{nameof(SubmoduleRegistry)}.{nameof(TryDispose)}(..) encountered an unexpected exception while trying to dispose the object of type {disposable?.GetType().FullName ?? "(NULL)"}!\n\n{exc.ToString()}");
-				return false;
-			}
-		}
+				FileLoggingHelper.LogError($"{nameof(SubmoduleRegistry)}.{nameof(StartProgram)}(..) encountered an unexpected exception while trying to start submodule program: {submoduleProgramName}\n\n{exc.ToString()}");
 
-		private static bool TryUnload(AssemblyLoadContext assemblyLoadContext)
-		{
-			try
-			{
-				assemblyLoadContext.Unload();
-				return true;
-			}
-			catch (Exception exc)
-			{
-				FileLoggingHelper.LogError($"{nameof(SubmoduleRegistry)}.{nameof(TryUnload)}(..) encountered an unexpected exception while trying unload the assembly load context!\n\n{exc.ToString()}");
 				return false;
 			}
 		}
@@ -238,18 +262,15 @@ namespace MQ2DotNetCore.Base
 
 				}
 
-				TryDispose(CancellationTokenSource);
-				TryDispose(Task);
+				CleanupHelper.TryDispose(CancellationTokenSource);
+				CleanupHelper.TryDispose(Task);
 				if (ProgramInstance is IDisposable disposableProgramInstance)
 				{
-					TryDispose(disposableProgramInstance);
+					CleanupHelper.TryDispose(disposableProgramInstance);
 				}
 
-				if (AssemblyLoadContext != null)
-				{
-					TryUnload(AssemblyLoadContext);
-					AssemblyLoadContext = null;
-				}
+				CleanupHelper.TryUnload(AssemblyLoadContext);
+				AssemblyLoadContext = null;
 
 				_isDisposed = true;
 			}
