@@ -46,7 +46,7 @@ namespace RhinoBot.LocationHelpers
 			};
 		}
 
-		public static bool TryParseYXZ(string yxzValue, out Coordinates? coordinates, MQ2? mq2 = null)
+		public static bool TryParseYXZ(string yxzValue, out Coordinates? coordinates, MQ2ChatWindow? mq2 = null)
 		{
 			coordinates = null;
 			if (string.IsNullOrWhiteSpace(yxzValue))

@@ -2,6 +2,8 @@
 using MQ2DotNet.MQ2API;
 using MQ2DotNet.Program;
 using MQ2DotNet.Services;
+using MQ2DotNetCore;
+using MQ2DotNetCore.MQ2Api;
 using Nito.AsyncEx;
 using RhinoBot.Base;
 using RhinoBot.Configs;
@@ -16,10 +18,9 @@ using System.Threading.Tasks;
 
 namespace RhinoBot
 {
-	[PublicAPI]
-	public class RhinoBot : IProgram
+	public class RhinoBot : IMQ2Program
 	{
-		public readonly MQ2 Mq2;
+		public readonly MQ2ChatWindow Mq2;
 		//public readonly Chat Chat;
 		public readonly Commands Commands;
 		//public readonly Events Events;
@@ -35,14 +36,7 @@ namespace RhinoBot
 		public readonly MissionCommands MissionCommands;
 		public readonly ToonCommands ToonCommands;
 
-		public RhinoBot(
-				MQ2 mq2,
-				// Chat chat ,
-				Commands commands,
-				// Events events,
-				Spawns spawns,
-				TLO tlo
-			)
+		public RhinoBot()
 		{
 			Mq2 = mq2;
 			//Chat = chat;
@@ -167,6 +161,11 @@ namespace RhinoBot
 			//Mq2.WriteChatSafe($"Parse variable chat line (was found: {wasFound}):  {variablesResult}");
 
 			return variablesResult;
+		}
+
+		public Task RunAsync(string[] commandArguments, CancellationToken token)
+		{
+			throw new NotImplementedException();
 		}
 	}
 }

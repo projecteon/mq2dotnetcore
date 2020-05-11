@@ -1,10 +1,49 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace MQ2DotNetCore.Base
 {
 	public static class StringHelper
 	{
+		public static string GetCallSiteString(string? callerFilePath, string? callerMemberName)
+		{
+			var normalizedCallerFilePath = NormalizeCallerFilePath(callerFilePath);
+			if (!string.IsNullOrEmpty(normalizedCallerFilePath) && !string.IsNullOrEmpty(callerMemberName))
+			{
+				return $"{normalizedCallerFilePath}.{callerMemberName}";
+			}
+
+			if (!string.IsNullOrEmpty(normalizedCallerFilePath))
+			{
+				return normalizedCallerFilePath;
+			}
+
+			if (!string.IsNullOrEmpty(callerMemberName))
+			{
+				return callerMemberName;
+			}
+
+			return string.Empty;
+		}
+
+		public static string? NormalizeCallerFilePath(string? callerFilePath)
+		{
+			if (string.IsNullOrEmpty(callerFilePath))
+			{
+				return callerFilePath;
+			}
+
+			var fileName = Path.GetFileNameWithoutExtension(callerFilePath);
+			if (!string.IsNullOrEmpty(fileName))
+			{
+				return fileName;
+			}
+
+			return callerFilePath.Trim();
+		}
+
 		/// <summary>
 		/// Split a string into an array of arguments separated by spaces, accounting for arguments
 		/// that are wrapped in double quotes.

@@ -166,7 +166,7 @@ dotnet_diagnostic.CA1829.severity    = error
 dotnet_diagnostic.CA2000.severity    = error
 
 # Rule: (CA2007) Consider calling ConfigureAwait on the awaited task. Reason: don't do this, the sync context is used to make sure all continuations run on the eq thread, since EQ/MQ2 aren't thread safe
-dotnet_diagnostic.CA2007.severity    = suggestion
+dotnet_diagnostic.CA2007.severity    = silent
 
 # Rule: (CA2008) Do not create tasks without passing a TaskScheduler.
 dotnet_diagnostic.CA2008.severity    = suggestion

@@ -1,51 +1,17 @@
 ﻿using MQ2DotNetCore.Interop;
-using MQ2DotNetCore.Logging;
 using System;
-using System.Runtime.InteropServices;
 using System.Text;
 
-namespace MQ2DotNet.MQ2API
+namespace MQ2DotNetCore.MQ2Api
 {
 	/// <summary>
 	/// Contains methods and properties relating to MQ2 functionality
 	/// </summary>
-	public sealed class MQ2
+	public sealed class MQ2ChatWindow
 	{
-		private static SafeLibraryHandle? _mq2MainLibraryHandle;
-		static MQ2()
-		{
-			try
-			{
-				_mq2MainLibraryHandle = Kernel32.NativeMethods.LoadLibrary(MQ2Main.DLL);
-			}
-			catch (Exception exc)
-			{
-				FileLoggingHelper.LogCritical($"Failed to load library {MQ2Main.DLL}!");
-			}
-		}
+		internal static readonly MQ2ChatWindow Instance = new MQ2ChatWindow();
 
-		internal static readonly MQ2 Instance = new MQ2();
-
-		private MQ2() { }
-
-		/// <summary>
-		/// Write a line of chat to the MQ2 chat window
-		/// </summary>
-		/// <param name="text">Text to write</param>
-		public void WriteChat(string text)
-		{
-			MQ2Main.NativeMethods.MQ2WriteChatf(Sanitize(text));
-		}
-
-		/// <summary>
-		/// Threadsafe version of <see cref="WriteChat"/>
-		/// </summary>
-		/// <param name="text">Text to write</param>
-		public void WriteChatSafe(string text)
-		{
-			// Trim so as to not crash MQ2/EQ
-			MQ2Main.NativeMethods.MQ2WriteChatfSafe(Sanitize(text));
-		}
+		private MQ2ChatWindow() { }
 
 		/// <summary>
 		/// Uses MQ2's parser to evaluate a formula
@@ -56,7 +22,9 @@ namespace MQ2DotNet.MQ2API
 		public double Calculate(string formula, bool parse = true)
 		{
 			if (parse)
+			{
 				formula = Parse(formula);
+			}
 
 			if (!MQ2Main.NativeMethods.MQ2Calculate(formula, out var result))
 			{
@@ -64,6 +32,22 @@ namespace MQ2DotNet.MQ2API
 			}
 
 			return result;
+		}
+
+		/// <summary>
+		/// Execute a command, exactly as if you typed it in the chat window
+		/// Note: whether this will parse MQ2 variables or not depends only on the command entered. Use /noparse to force no parsing
+		/// </summary>
+		/// <param name="command">Command to execute</param>
+		public void DoCommand(string command)
+		{
+			var characterSpawnIntPointer = MQ2NativeHelper.GetCharacterSpawnIntPointer();
+			if (characterSpawnIntPointer == IntPtr.Zero)
+			{
+				return;
+			}
+
+			MQ2Main.NativeMethods.MQ2HideDoCommand(characterSpawnIntPointer, command, false);
 		}
 
 		/// <summary>
@@ -85,67 +69,48 @@ namespace MQ2DotNet.MQ2API
 		/// <returns>Parsed expression</returns>
 		public string Parse(string expression)
 		{
-			var sb = new StringBuilder(expression, 2047);
-			if (!MQ2Main.NativeMethods.MQ2ParseMacroData(sb, (uint)sb.Capacity + 1))
+			var stringBuilder = new StringBuilder(expression, 2047);
+			if (!MQ2Main.NativeMethods.MQ2ParseMacroData(stringBuilder, (uint)stringBuilder.Capacity + 1))
 			{
 				throw new FormatException("Could not parse expression: " + expression);
 			}
 
-			return sb.ToString();
+			return stringBuilder.ToString();
 		}
 
 		/// <summary>
-		/// Execute a command, exactly as if you typed it in the chat window
-		/// Note: whether this will parse MQ2 variables or not depends only on the command entered. Use /noparse to force no parsing
+		/// Write a line of chat to the MQ2 chat window
 		/// </summary>
-		/// <param name="command">Command to execute</param>
-		public void DoCommand(string command)
+		/// <param name="text">Text to write</param>
+		public void WriteChat(string text)
 		{
-			var characterSpawnIntPointer = GetCharacterSpawnIntPointer();
-			if (characterSpawnIntPointer == IntPtr.Zero)
+			if (string.IsNullOrEmpty(text))
 			{
 				return;
 			}
 
-			MQ2Main.NativeMethods.MQ2HideDoCommand(characterSpawnIntPointer, command, false);
+			// TODO: The Sanitize(..) logic trims and cuts off anything after a line break to prevent
+			// MQ2 from crashing. We should modify this to split the text, if necessary and print
+			// it in segments so that it successfully prints all of the requested text.
+
+			MQ2Main.NativeMethods.MQ2WriteChatf(Sanitize(text));
 		}
 
-		private static string? _mq2IniPath = null;
-		public static string? GetMQ2IniPath()
+		/// <summary>
+		/// Threadsafe version of <see cref="WriteChat"/>
+		/// </summary>
+		/// <param name="text">Text to write</param>
+		public void WriteChatSafe(string text)
 		{
-			if (_mq2IniPath != null)
+			if (string.IsNullOrEmpty(text))
 			{
-				return _mq2IniPath;
+				return;
 			}
 
-			if (_mq2MainLibraryHandle == null)
-			{
-				return null;
-			}
-
-			var mq2InitPath = Marshal.PtrToStringAnsi(Kernel32.NativeMethods.GetProcAddress(_mq2MainLibraryHandle, "gszINIPath"));
-			_mq2IniPath = mq2InitPath;
-			return _mq2IniPath;
-		}
-
-		public static IntPtr GetCharacterSpawnIntPointer()
-		{
-			if (_mq2MainLibraryHandle == null)
-			{
-				return IntPtr.Zero;
-			}
-
-			try
-			{
-				var ppLocalPlayer = Kernel32.NativeMethods.GetProcAddress(_mq2MainLibraryHandle, "ppLocalPlayer");
-				var ppPlayer = Marshal.ReadIntPtr(ppLocalPlayer);
-				return Marshal.ReadIntPtr(ppPlayer);
-			}
-			catch (Exception exc)
-			{
-				FileLoggingHelper.LogError($"{nameof(GetCharacterSpawnIntPointer)} failed locating / marshalling the integer pointer!\n\n{exc.ToString()}");
-				return IntPtr.Zero;
-			}
+			// TODO: The Sanitize(..) logic trims and cuts off anything after a line break to prevent
+			// MQ2 from crashing. We should modify this to split the text, if necessary and print
+			// it in segments so that it successfully prints all of the requested text. 
+			MQ2Main.NativeMethods.MQ2WriteChatfSafe(Sanitize(text));
 		}
 
 		private static string Sanitize(string text)
@@ -154,10 +119,15 @@ namespace MQ2DotNet.MQ2API
 			var sanitized = text.Substring(0, Math.Min(text.Length, 2047));
 			var index = text.IndexOfAny(new[] { '\r', '\n' });
 			if (index > 0)
+			{
 				sanitized = sanitized.Substring(0, index);
+			}
+
 			return sanitized;
 		}
 
+		// TODO: Add an MQ2ColorHelper with methods to wrap text strings up with the control characters
+		// for colors...
 		internal static void WriteChatGeneralError(string text)
 		{
 			Instance.WriteChat($"\ag[.NET] \arError: \aw{text}");

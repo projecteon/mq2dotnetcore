@@ -1,4 +1,6 @@
 ﻿using MQ2DotNetCore;
+using MQ2DotNetCore.MQ2Api;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -6,12 +8,31 @@ namespace TestProgram
 {
 	public class TestProgram : IMQ2Program
 	{
-		public async Task RunAsync(string[] commandArguments, CancellationToken token)
+		public async Task RunAsync(string[] commandArguments, MQ2Dependencies mq2Dependencies, CancellationToken cancellationToken)
 		{
-			MQ2DotNetCore.Logging.FileLoggingHelper
-				.LogInformation($"{nameof(TestProgram)}.{nameof(RunAsync)}(..) is executing. [CommandArguments: {string.Join(", ", commandArguments)}]");
+			var randomId = new Random().Next();
 
-			await Task.Delay(500);
+			MQ2DotNetCore.Logging.FileLoggingHelper
+				.LogInformation($"Executing! [RandomId: {randomId}] [CommandArguments: {string.Join(", ", commandArguments)}]");
+
+			for (var loopIndex = 0; loopIndex < 100; ++loopIndex)
+			{
+				await Task.Delay(200);
+
+				// These should all log the same managed thread id
+				MQ2DotNetCore.Logging.FileLoggingHelper
+					.LogInformation($"Delayed for 200ms. [RandomId: {randomId}] [CommandArguments: {string.Join(", ", commandArguments)}]");
+			}
+
+			for (var loopIndex2 = 0; loopIndex2 < 100; ++loopIndex2)
+			{
+				await Task.Delay(200).ConfigureAwait(false);
+
+				// ConfigureAwait(false) will probably mean these can run the continuation on thread pool threads
+				MQ2DotNetCore.Logging.FileLoggingHelper
+					.LogInformation($"Delayed for 200ms with ConfigureAwait(false). [RandomId: {randomId}] [CommandArguments: {string.Join(", ", commandArguments)}]");
+			}
+
 		}
 	}
 }
