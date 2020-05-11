@@ -1,0 +1,16 @@
+{
+	"name": "mq2dotnetcore",
+	"version": "1.0.0",
+	"main": "index.js",
+	"author": "Ryan Thomas <Ryan.Thomas@rhinobyte.com>",
+	"devDependencies": {
+		"@types/fs-extra": "8.1.0",
+		"@types/klaw": "3.0.1",
+		"@types/yargs": "15.0.4",
+		"date-fns": "2.13.0",
+		"fs-extra": "8.1.0",
+		"klaw": "3.0.0",
+		"typescript": "3.8.3",
+		"yargs": "15.3.1"
+	}
+}

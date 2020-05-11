@@ -335,3 +335,6 @@ Documentation/**/Help/
 Documentation/WebHelp/
 **/Doc/Help/
 *.shfbproj_*
+
+
+/package-lock.json

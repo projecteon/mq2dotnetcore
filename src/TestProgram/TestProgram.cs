@@ -15,7 +15,8 @@ namespace TestProgram
 			MQ2DotNetCore.Logging.FileLoggingHelper
 				.LogInformation($"Executing! [RandomId: {randomId}] [CommandArguments: {string.Join(", ", commandArguments)}]");
 
-			for (var loopIndex = 0; loopIndex < 100; ++loopIndex)
+			// 100 loops == ~20 seconds
+			for (var loopIndex = 0; loopIndex < 1500; ++loopIndex)
 			{
 				await Task.Delay(200);
 

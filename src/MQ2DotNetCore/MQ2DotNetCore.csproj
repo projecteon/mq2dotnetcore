@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>netcoreapp3.1</TargetFramework>
@@ -8,13 +8,35 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+		<PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Update="MQ2DotNetCore.appsettings.json">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
+		<None Update="MQ2DotNetCore.appsettings.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
+
+	<Target Name="DeployFiles" AfterTargets="Build" Condition="'$(DeployMQ2DotNetCoreFilesAfterBuild)'=='true'">
+		<PropertyGroup>
+			<FullOutputPathForProject>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)\$(OutDir)'))</FullOutputPathForProject>
+			<ScriptsFolder>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)\..\..\scripts'))</ScriptsFolder>
+			<MQ2DotNetCoreDeployFolder>$(MQ2InstallLiveRootFolder)\MQ2DotNetCore</MQ2DotNetCoreDeployFolder>
+		</PropertyGroup>
+		
+		<Message Text="
+Output Directory: $(FullOutputPathForProject)
+
+MQ2DotNetCore Deploy Folder: $(MQ2DotNetCoreDeployFolder)
+
+Scripts Folder: $(ScriptsFolder)
+
+Executing Deploy Files Task: node $(ScriptsFolder)\DeployFilesTask.js --sourcePath '$(FullOutputPathForProject)' --destinationPath '$(MQ2DotNetCoreDeployFolder)'
+"
+	/>
+
+		<Exec Command="node $(ScriptsFolder)\DeployFilesTask.js --sourcePath '$(FullOutputPathForProject)' --destinationPath '$(MQ2DotNetCoreDeployFolder)'" />
+		
+	</Target>
 
 </Project>

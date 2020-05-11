@@ -8,6 +8,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 		.gitignore = .gitignore
 		.gitlab-ci.yml = .gitlab-ci.yml
+		Solution Items\DeployFilesTask.ts = Solution Items\DeployFilesTask.ts
 		directory.build.props = directory.build.props
 		LICENSE = LICENSE
 		README.md = README.md
@@ -21,7 +22,16 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MQ2DotNetCoreLoader", "src\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RhinoBot", "src\RhinoBot\RhinoBot.csproj", "{9CCA8010-D875-4C39-A892-D570E7B6813C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestProgram", "src\TestProgram\TestProgram.csproj", "{CD8C5DB5-8546-4AE8-BB74-C8E98866F66C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestProgram", "src\TestProgram\TestProgram.csproj", "{CD8C5DB5-8546-4AE8-BB74-C8E98866F66C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{82482F41-1D8F-49CE-918D-1A40A0D1961B}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\DeployFilesTask.js = scripts\DeployFilesTask.js
+		scripts\DeployFilesTask.ts = scripts\DeployFilesTask.ts
+		package.json = package.json
+		tsconfig.json = tsconfig.json
+		yarn.lock = yarn.lock
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
