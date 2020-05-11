@@ -58,11 +58,18 @@ namespace MQ2DotNetCore
 
 				FileLoggingHelper.LogDebug("Attempting to register the primary commands...");
 
+				// TODO: Possible option to shorten commands, detect if the legacy
+				// MQ2DotNet plugin dll files are present / MQ2 ini entry for MQ2DotNet is present
+				// and only register the commands as /netcoreXXX if we need to disambiguate
+				// otherwise just use /netXXX to keep the command length shorter
+
 				// And command to run/end .net programs
 				_mq2CommandRegistry.AddCommand(nameof(LoaderEntryPoint), "/netcorerun", NetRunCommand);
 				_mq2CommandRegistry.AddCommand(nameof(LoaderEntryPoint), "/netcoreend", NetEndCommand);
 
 				_mq2CommandRegistry.AddCommand(nameof(LoaderEntryPoint), "/netcorelist", NetListCommand);
+
+				_mq2CommandRegistry.AddCommand(nameof(LoaderEntryPoint), "/netcorecanceltask", NetCancelCommandTask);
 
 				FileLoggingHelper.LogDebug("Done registering the primary commands.");
 
@@ -108,6 +115,23 @@ namespace MQ2DotNetCore
 			{
 				FileLoggingHelper.LogError(exc);
 			}
+		}
+
+		private static void NetCancelCommandTask(string[] commandArguments)
+		{
+			if (commandArguments == null || commandArguments.Length < 1)
+			{
+				MQ2ChatWindow.WriteChatProgram("Usage: /netcorecanceltask <commandName|*>");
+				return;
+			}
+
+			var commandNameToStop = commandArguments[0];
+			var canceledTaskCount = commandNameToStop == "*"
+				? _mq2CommandRegistry.CancelAllAsyncCommandTasks()
+				: _mq2CommandRegistry.CancelAsyncCommandTask(commandNameToStop);
+
+			FileLoggingHelper.LogInformation($"Canceled {canceledTaskCount} async command tasks for command: {commandNameToStop}");
+			MQ2ChatWindow.Instance.WriteChatSafe($"Canceled {canceledTaskCount} async command tasks for command: {commandNameToStop}");
 		}
 
 		private static void NetEndCommand(string[] commandArguments)
@@ -204,6 +228,7 @@ namespace MQ2DotNetCore
 					var submoduleDependencies = new MQ2Dependencies(
 						submoduleCommandRegistry,
 						MQ2ChatWindow.Instance,
+						_mq2SynchronizationContext,
 						submoduleProgramName
 					);
 
@@ -323,14 +348,9 @@ namespace MQ2DotNetCore
 		{
 			_mq2SynchronizationContext.DoEvents(true);
 
-			if ((pulseCount % 10_000) == 0)
+			if (pulseCount > 10_000)
 			{
-				FileLoggingHelper.LogTrace("Method was called");
-			}
-
-			var newPulseCount = Interlocked.Increment(ref pulseCount);
-			if (newPulseCount > (long.MaxValue / 2))
-			{
+				_mq2CommandRegistry.ProcessAsyncCommandTasks();
 				Interlocked.Exchange(ref pulseCount, 0);
 			}
 		}

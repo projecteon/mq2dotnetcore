@@ -317,6 +317,87 @@ namespace MQ2DotNetCore.Base
 			}
 		}
 
+		internal int CancelAllAsyncCommandTasks()
+		{
+			int cancelledTaskCount = 0;
+			try
+			{
+				FileLoggingHelper.LogDebug($"Attempting to cancel all async command tasks...");
+
+				foreach (var submoduleName in _asyncCommandTasks.Keys)
+				{
+					if (!_asyncCommandTasks.TryGetValue(submoduleName, out var asyncCommandTaskWrappersList)
+						|| asyncCommandTaskWrappersList == null)
+					{
+						continue;
+					}
+
+					foreach (var asyncCommandTaskWrapper in asyncCommandTaskWrappersList)
+					{
+						try
+						{
+							FileLoggingHelper.LogTrace($"Cancelling task... [Submodule: {submoduleName}] [CommandName: {asyncCommandTaskWrapper.CommandName}]");
+							asyncCommandTaskWrapper?.CancellationTokenSource.Cancel();
+							++cancelledTaskCount;
+						}
+						catch (Exception cancelException)
+						{
+							FileLoggingHelper.LogError(cancelException);
+						}
+					}
+				}
+			}
+			catch (Exception exc)
+			{
+				FileLoggingHelper.LogError(exc);
+			}
+
+			return cancelledTaskCount;
+		}
+
+		internal int CancelAsyncCommandTask(string commandNameToCancel)
+		{
+			int cancelledTaskCount = 0;
+			try
+			{
+				FileLoggingHelper.LogDebug($"Attempting to cancel async command task(s) for command name: {commandNameToCancel}...");
+
+				foreach (var submoduleName in _asyncCommandTasks.Keys)
+				{
+					if (!_asyncCommandTasks.TryGetValue(submoduleName, out var asyncCommandTaskWrappersList)
+						|| asyncCommandTaskWrappersList == null)
+					{
+						continue;
+					}
+
+					foreach (var asyncCommandTaskWrapper in asyncCommandTaskWrappersList)
+					{
+						try
+						{
+							if (asyncCommandTaskWrapper.CommandName != commandNameToCancel)
+							{
+								continue;
+							}
+
+							FileLoggingHelper.LogTrace($"Cancelling task... [Submodule: {submoduleName}] [CommandName: {asyncCommandTaskWrapper.CommandName}]");
+							asyncCommandTaskWrapper?.CancellationTokenSource.Cancel();
+							++cancelledTaskCount;
+						}
+						catch (Exception cancelException)
+						{
+							FileLoggingHelper.LogError(cancelException);
+						}
+					}
+				}
+			}
+			catch (Exception exc)
+			{
+				FileLoggingHelper.LogError(exc);
+			}
+
+			return cancelledTaskCount;
+		}
+
 		private CancellationTokenSource GetSubmoduleCancellationTokenSource(string submoduleName)
 		{
 			if (_submoduleCancellationTokenSourceDictionary.TryGetValue(submoduleName, out var submoduleCancellationTokenSource))
@@ -402,8 +483,10 @@ namespace MQ2DotNetCore.Base
 			}
 		}
 
-		private int ProcessAsyncCommandTasks()
+		internal int ProcessAsyncCommandTasks()
 		{
+			FileLoggingHelper.LogTrace("Processing async command tasks...");
+
 			var removedTaskCount = 0;
 			foreach (var submoduleName in _asyncCommandTasks.Keys)
 			{
