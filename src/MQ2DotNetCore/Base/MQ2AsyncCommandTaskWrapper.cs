@@ -10,23 +10,33 @@ namespace MQ2DotNetCore.Base
 			CancellationTokenSource cancellationTokenSource,
 			string commandName,
 			DateTime startTime,
-			Task<Task> wrapperTask
+			Task task
 		)
 		{
 			CancellationTokenSource = cancellationTokenSource;
 			CommandName = commandName;
-			WrapperTask = wrapperTask;
+			HasCancelled = false;
+			StartTime = startTime;
+			Task = task;
 		}
 
 		public CancellationTokenSource CancellationTokenSource { get; }
 		public string CommandName { get; }
+		public bool HasCancelled { get; private set; }
 		public DateTime StartTime { get; }
-		public Task<Task> WrapperTask { get; }
+		public Task Task { get; }
+
+		public void Cancel()
+		{
+			HasCancelled = true;
+			CleanupHelper.TryCancel(CancellationTokenSource);
+		}
 
 		public void Dispose()
 		{
 			CleanupHelper.TryCancel(CancellationTokenSource);
 			CleanupHelper.TryDispose(CancellationTokenSource);
+			CleanupHelper.TryDispose(Task);
 		}
 	}
 }

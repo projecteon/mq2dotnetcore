@@ -114,7 +114,6 @@ namespace MQ2DotNetCore.Base
 								submoduleCancellationTokenSource.Token
 							);
 
-
 							// When an async command is executed, instead of calling the handler directly, a task is created to await the handler
 							// As I understand it, this basically means the handler will be posted as a continuation to MQ2SynchronizationContext,
 							// and run on the next DoEvents()
@@ -131,8 +130,9 @@ namespace MQ2DotNetCore.Base
 								asyncCommandCancellationTokenSource,
 								commandName,
 								startTime,
-								wrapperTask
+								asyncCommandTask
 							);
+
 							AddAsyncCommandWrapperToDictionary(submoduleName, asyncCommandWrapper);
 						}
 						catch (Exception innerException)
@@ -167,7 +167,9 @@ namespace MQ2DotNetCore.Base
 				if (_asyncCommandTasks.TryGetValue(submoduleName, out var wrapperListForSubmodule)
 					&& wrapperListForSubmodule != null)
 				{
+#if DEBUG
 					FileLoggingHelper.LogTrace($"Adding async command task wrapper for command {asyncCommandTaskWrapper.CommandName} to list for submodule: {submoduleName}");
+#endif
 					wrapperListForSubmodule.Add(asyncCommandTaskWrapper);
 					return;
 				}
@@ -300,10 +302,18 @@ namespace MQ2DotNetCore.Base
 			{
 				// Keep the command names grouped by submodule so we can remove all commands for a submodule
 				// when it gets unloaded
+#if DEBUG
+				FileLoggingHelper.LogTrace($"Adding {commandName} to commands list in submodule dictionary for {submoduleName}");
+#endif
+
 				submoduleCommandsList.Add(commandName);
 			}
 			else
 			{
+#if DEBUG
+				FileLoggingHelper.LogTrace($"Adding {commandName} to a new commands list in submodule dictionary for {submoduleName}");
+#endif
+
 				var newSubmoduleCommandsList = new List<string> { commandName };
 				if (!_submoduleCommandsDictionary.TryAdd(submoduleName, newSubmoduleCommandsList))
 				{
@@ -336,14 +346,32 @@ namespace MQ2DotNetCore.Base
 					{
 						try
 						{
+#if DEBUG
 							FileLoggingHelper.LogTrace($"Cancelling task... [Submodule: {submoduleName}] [CommandName: {asyncCommandTaskWrapper.CommandName}]");
-							asyncCommandTaskWrapper?.CancellationTokenSource.Cancel();
+#endif
+
+							asyncCommandTaskWrapper?.Cancel();
 							++cancelledTaskCount;
 						}
 						catch (Exception cancelException)
 						{
 							FileLoggingHelper.LogError(cancelException);
 						}
+					}
+				}
+
+				if (cancelledTaskCount > 0)
+				{
+					try
+					{
+#if DEBUG
+						FileLoggingHelper.LogTrace($"Running the sync context's DoEvents(true) method to give the cancelled tasks a chance to finish up...");
+#endif
+						_mq2SynchronizationContext.DoEvents(true);
+					}
+					catch (Exception doEventsException)
+					{
+						FileLoggingHelper.LogError(doEventsException);
 					}
 				}
 			}
@@ -355,37 +383,69 @@ namespace MQ2DotNetCore.Base
 			return cancelledTaskCount;
 		}
 
-		internal int CancelAsyncCommandTask(string commandNameToCancel)
+		internal int CancelAsyncCommandTask(string nameToCancel)
 		{
 			int cancelledTaskCount = 0;
 			try
 			{
-				FileLoggingHelper.LogDebug($"Attempting to cancel async command task(s) for command name: {commandNameToCancel}...");
+				var normalizedCommandNameToCancel = nameToCancel.StartsWith("/")
+					? nameToCancel
+					: $"/{nameToCancel}";
+
+				FileLoggingHelper.LogDebug($"Attempting to cancel async command task(s) for command name: {normalizedCommandNameToCancel}...");
 
 				foreach (var submoduleName in _asyncCommandTasks.Keys)
 				{
 					if (!_asyncCommandTasks.TryGetValue(submoduleName, out var asyncCommandTaskWrappersList)
 						|| asyncCommandTaskWrappersList == null)
 					{
+						FileLoggingHelper.LogWarning($"Failed to get async command wrappers list for submodule: {submoduleName}...");
 						continue;
 					}
+
+#if DEBUG
+					FileLoggingHelper.LogTrace($"Async command task wrappers list ({submoduleName}) has {asyncCommandTaskWrappersList.Count} task wrapper instances");
+#endif
 
 					foreach (var asyncCommandTaskWrapper in asyncCommandTaskWrappersList)
 					{
 						try
 						{
-							if (asyncCommandTaskWrapper.CommandName != commandNameToCancel)
+							if (asyncCommandTaskWrapper.CommandName != normalizedCommandNameToCancel)
 							{
+#if DEBUG
+								FileLoggingHelper.LogTrace($"Async command name {asyncCommandTaskWrapper.CommandName} does not match {normalizedCommandNameToCancel}...");
+#endif
 								continue;
 							}
 
+#if DEBUG
 							FileLoggingHelper.LogTrace($"Cancelling task... [Submodule: {submoduleName}] [CommandName: {asyncCommandTaskWrapper.CommandName}]");
-							asyncCommandTaskWrapper?.CancellationTokenSource.Cancel();
+#endif
+
+							asyncCommandTaskWrapper?.Cancel();
 							++cancelledTaskCount;
+
 						}
 						catch (Exception cancelException)
 						{
 							FileLoggingHelper.LogError(cancelException);
+						}
+					}
+
+					if (cancelledTaskCount > 0)
+					{
+						try
+						{
+#if DEBUG
+							FileLoggingHelper.LogTrace($"Running the sync context's DoEvents(true) method to give the cancelled tasks a chance to finish up...");
+#endif
+
+							_mq2SynchronizationContext.DoEvents(true);
+						}
+						catch (Exception doEventsException)
+						{
+							FileLoggingHelper.LogError(doEventsException);
 						}
 					}
 				}
@@ -424,6 +484,39 @@ namespace MQ2DotNetCore.Base
 			}
 		}
 
+		internal void PrintRegisteredCommands()
+		{
+			if (_isDisposed)
+			{
+				throw new ObjectDisposedException(nameof(MQ2CommandRegistry));
+			}
+
+			try
+			{
+				var allRegisteredCommands = _commandsDictionary.Keys.ToArray();
+				FileLoggingHelper.LogInformation($"All registered commands in {nameof(_commandsDictionary)}: {string.Join(", ", allRegisteredCommands)}");
+
+				var allSubmoduleNames = _submoduleCommandsDictionary.Keys.ToArray();
+				FileLoggingHelper.LogInformation($"All submodule names in {nameof(_submoduleCommandsDictionary)}: {string.Join(", ", allSubmoduleNames)}");
+
+				foreach (var nextSubmoduleName in allSubmoduleNames)
+				{
+					if (!_submoduleCommandsDictionary.TryGetValue(nextSubmoduleName, out var submoduleCommandList))
+					{
+						FileLoggingHelper.LogWarning($"Failed to get submodule command list for submodule name: {nextSubmoduleName}");
+						continue;
+					}
+
+
+					FileLoggingHelper.LogInformation($"All registered commands in submodule ({nextSubmoduleName}) list: {string.Join(", ", submoduleCommandList)}");
+				}
+			}
+			catch (Exception exc)
+			{
+				FileLoggingHelper.LogError(exc);
+			}
+		}
+
 		internal void PrintRunningCommands()
 		{
 			if (_isDisposed)
@@ -433,16 +526,23 @@ namespace MQ2DotNetCore.Base
 
 			foreach (var commandName in _synchronousCommandInProgressDictionary.Keys)
 			{
-				if (!_synchronousCommandInProgressDictionary.TryGetValue(commandName, out var commandStartTime))
+				try
 				{
-					FileLoggingHelper.LogWarning($"Failed to get synchronous command start time from the dictionary: {commandName}");
-					MQ2ChatWindow.Instance.WriteChatSafe($"  Synchronous command {commandName} is running.");
-					continue;
-				}
+					if (!_synchronousCommandInProgressDictionary.TryGetValue(commandName, out var commandStartTime))
+					{
+						FileLoggingHelper.LogWarning($"Failed to get synchronous command start time from the dictionary: {commandName}");
+						MQ2ChatWindow.Instance.WriteChatSafe($"  Synchronous command {commandName} is running.");
+						continue;
+					}
 
-				var ellapsedMilliseconds = (DateTime.Now - commandStartTime).TotalMilliseconds;
-				FileLoggingHelper.LogDebug($"Synchronous command {commandName} is running. [StartTime: {commandStartTime}] [Ellapsed: {ellapsedMilliseconds} ms ]");
-				MQ2ChatWindow.Instance.WriteChatSafe($"  Synchronous command {commandName} is running. [StartTime: {commandStartTime}] [Ellapsed: {ellapsedMilliseconds} ms ]");
+					var ellapsedMilliseconds = (DateTime.Now - commandStartTime).TotalMilliseconds;
+					FileLoggingHelper.LogDebug($"Synchronous command {commandName} is running. [StartTime: {commandStartTime}] [Ellapsed: {ellapsedMilliseconds} ms ]");
+					MQ2ChatWindow.Instance.WriteChatSafe($"  Synchronous command {commandName} is running. [StartTime: {commandStartTime}] [Ellapsed: {ellapsedMilliseconds} ms ]");
+				}
+				catch (Exception exc)
+				{
+					FileLoggingHelper.LogError(exc);
+				}
 			}
 
 			var processedAsyncCommandTasks = ProcessAsyncCommandTasks();
@@ -471,7 +571,7 @@ namespace MQ2DotNetCore.Base
 						var commandNameWithIndex = $"{nextCommandName} (#{commandNameCount[nextCommandName]})";
 
 						var ellapsedMilliseconds = (DateTime.Now - asyncCommandTaskWrapper.StartTime).TotalMilliseconds;
-						var message = $"Async command {commandNameWithIndex} task is in progress. [StartTime: {asyncCommandTaskWrapper.StartTime}] [Ellapsed: {ellapsedMilliseconds} ms ] [TaskStatus: {asyncCommandTaskWrapper.WrapperTask.Status}]";
+						var message = $"Async command {commandNameWithIndex} task is in progress. [StartTime: {asyncCommandTaskWrapper.StartTime}] [Ellapsed: {ellapsedMilliseconds} ms ] [TaskStatus: {asyncCommandTaskWrapper.Task.Status}]";
 						FileLoggingHelper.LogDebug(message);
 						MQ2ChatWindow.Instance.WriteChatSafe(message);
 					}
@@ -485,7 +585,9 @@ namespace MQ2DotNetCore.Base
 
 		internal int ProcessAsyncCommandTasks()
 		{
+#if DEBUG
 			FileLoggingHelper.LogTrace("Processing async command tasks...");
+#endif
 
 			var removedTaskCount = 0;
 			foreach (var submoduleName in _asyncCommandTasks.Keys)
@@ -499,14 +601,18 @@ namespace MQ2DotNetCore.Base
 						continue;
 					}
 
-					var tasksToRemove = submoduleWrapperList.Where(asyncCommandTask => CleanupHelper.IsTaskStopped(asyncCommandTask.WrapperTask)).ToList();
+					var tasksToRemove = submoduleWrapperList.Where(asyncCommandTask => CleanupHelper.IsTaskStopped(asyncCommandTask.Task)).ToList();
 					foreach (var asyncCommandTaskWrapper in tasksToRemove)
 					{
-						var taskStatus = asyncCommandTaskWrapper.WrapperTask.Status;
+						var taskStatus = asyncCommandTaskWrapper.Task.Status;
 						submoduleWrapperList.Remove(asyncCommandTaskWrapper);
 
 						++removedTaskCount;
+
+#if DEBUG
 						FileLoggingHelper.LogTrace($"Removed a completed task. [SubmoduleName: {submoduleName}] [CommandName: {asyncCommandTaskWrapper.CommandName}] [TaskStatus: {taskStatus}] [StartTime: {asyncCommandTaskWrapper.StartTime}]");
+#endif
+
 					}
 				}
 				catch (Exception exc)
@@ -631,16 +737,30 @@ namespace MQ2DotNetCore.Base
 			var wasRemovedFromSubmoduleDictionary = false;
 			try
 			{
-				foreach (var nextSubmoduleName in _submoduleCommandsDictionary.Keys)
+				var allSubmoduleNames = _submoduleCommandsDictionary.Keys.ToArray();
+
+#if DEBUG
+				FileLoggingHelper.LogTrace($"All submodule names in {nameof(_submoduleCommandsDictionary)}: {string.Join(", ", allSubmoduleNames)}");
+#endif
+
+				foreach (var nextSubmoduleName in allSubmoduleNames)
 				{
 					if (!_submoduleCommandsDictionary.TryGetValue(nextSubmoduleName, out var submoduleCommandList))
 					{
+#if DEBUG
+						FileLoggingHelper.LogTrace($"Failed to get submodule command list for submodule name: {nextSubmoduleName}");
+#endif
+
 						continue;
 					}
 
-					var wasRemoved = submoduleCommandList?.Remove(commandName) == true;
+					var wasRemoved = submoduleCommandList.Remove(commandName);
 					if (!wasRemoved)
 					{
+#if DEBUG
+						FileLoggingHelper.LogTrace($"Submodule command list did not contain ({commandName}), all commands in list: {string.Join(", ", submoduleCommandList)}");
+#endif
+
 						continue;
 					}
 

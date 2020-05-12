@@ -3,6 +3,7 @@ using System;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace MQ2DotNetCore.Logging
 {
@@ -148,36 +149,42 @@ namespace MQ2DotNetCore.Logging
 			return $"[{DateTime.Now} ({Thread.CurrentThread.ManagedThreadId}] ({logLevel})  {callSite}]";
 		}
 
-		private static bool TryAppendToFile(string message)
+		private static void TryAppendToFile(string message)
 		{
 			try
 			{
-				var writeAttempts = 0;
-				while (writeAttempts < 3)
+				// Forcing these onto a thread pool thread using Task.Run so we're not blocking the EQ/MQ2 thread with
+				// file I/O, and so that we can use File.AppendAllTextAsync(..) in lieu of AppendAllText(..)
+				// Could probably push these into a queue and have a continuous background handler process them if we
+				// want to be fancy
+
+				Task.Run(async () =>
 				{
-					try
-					{
-						++writeAttempts;
-						File.AppendAllText(_logFilePath, message);
-						return true;
-					}
-					catch (Exception writeException)
+					var writeAttempts = 0;
+					while (writeAttempts < 3)
 					{
 						try
 						{
-							Console.WriteLine(writeException);
+							++writeAttempts;
+							await File.AppendAllTextAsync(_logFilePath, message);
+							break;
 						}
-						catch (Exception)
+						catch (Exception writeException)
 						{
+							try
+							{
+								Console.WriteLine(writeException);
+							}
+							catch (Exception)
+							{
+							}
 						}
 					}
-				}
+				});
 			}
 			catch(Exception)
 			{
 			}
-
-			return false;
 		}
 	}
 }

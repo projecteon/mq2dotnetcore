@@ -42,10 +42,23 @@ namespace MQ2DotNetCore.Base
 				baseLoadException = exc;
 			}
 
+			if (AssemblyLoadContext.Default.Assemblies.Any(sharedAssembly => sharedAssembly.FullName == assemblyName.FullName))
+			{
+#if DEBUG
+				FileLoggingHelper.LogTrace($"[{Name}]  Requested assembly name ({assemblyName}) matches an assembly in the default assembly load context.");
+#endif
+
+				// Ok to return null here it will get supplied from the AssemblyLoadContext.Default.Assemblies...
+				return null;
+			}
+
 			if (assemblyName?.Name == "MQ2DotNetCore")
 			{
 				var assemblyNamesInDefaultLoadContext = AssemblyLoadContext.Default.Assemblies.Select(assembly => assembly.FullName);
-				FileLoggingHelper.LogDebug($"[{Name}]  MQ2DotNetCore is being requested. Assemblies in default load context:\n\n\t{string.Join(",\n\t", assemblyNamesInDefaultLoadContext)}\n\n");
+
+#if DEBUG
+				FileLoggingHelper.LogTrace($"[{Name}]  MQ2DotNetCore is being requested. Assemblies in default load context:\n\n\t{string.Join(",\n\t", assemblyNamesInDefaultLoadContext)}\n\n");
+#endif
 
 				var mq2DotNetCoreAssembly = AssemblyLoadContext.Default.Assemblies
 					.FirstOrDefault(assembly => assembly.FullName?.Contains("MQ2DotNetCore") == true);
@@ -78,11 +91,7 @@ namespace MQ2DotNetCore.Base
 				}
 			}
 
-			FileLoggingHelper.LogDebug($"[{Name}]  Failed to locate or load assembly: {assemblyName}");
-
-			// If it didn't load here it should fallback to using the assembly from the AssemblyLoadContext.Default.Assemblies (if present). If not
-			// present in the default load context a type load exception will be thrown...
-
+			FileLoggingHelper.LogWarning($"[{Name}]  Failed to locate or load assembly: {assemblyName}");
 			return null;
 		}
 	}

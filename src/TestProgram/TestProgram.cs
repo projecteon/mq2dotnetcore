@@ -1,4 +1,5 @@
 ﻿using MQ2DotNetCore;
+using MQ2DotNetCore.Logging;
 using MQ2DotNetCore.MQ2Api;
 using System;
 using System.Threading;
@@ -10,30 +11,69 @@ namespace TestProgram
 	{
 		public async Task RunAsync(string[] commandArguments, MQ2Dependencies mq2Dependencies, CancellationToken cancellationToken)
 		{
-			var randomId = new Random().Next();
-
-			MQ2DotNetCore.Logging.FileLoggingHelper
-				.LogInformation($"Executing! [RandomId: {randomId}] [CommandArguments: {string.Join(", ", commandArguments)}]");
-
-			// 100 loops == ~20 seconds
-			for (var loopIndex = 0; loopIndex < 1500; ++loopIndex)
+			try
 			{
-				await Task.Delay(200);
+				if (mq2Dependencies == null)
+				{
+					throw new ArgumentNullException(nameof(mq2Dependencies));
+				}
 
-				// These should all log the same managed thread id
-				MQ2DotNetCore.Logging.FileLoggingHelper
-					.LogInformation($"Delayed for 200ms. [RandomId: {randomId}] [CommandArguments: {string.Join(", ", commandArguments)}]");
+				mq2Dependencies.CommandRegistry.AddAsyncCommand("/testcommandasync", TestCommandAsync);
+
+				while (cancellationToken != null && !cancellationToken.IsCancellationRequested)
+				{
+					try
+					{
+						await Task.Delay(5000, cancellationToken);
+					}
+					catch (TaskCanceledException)
+					{
+#if DEBUG
+						FileLoggingHelper.LogTrace("Task has been cancelled");
+#endif
+
+						break;
+					}
+				}
 			}
-
-			for (var loopIndex2 = 0; loopIndex2 < 100; ++loopIndex2)
+			catch (Exception exc)
 			{
-				await Task.Delay(200).ConfigureAwait(false);
-
-				// ConfigureAwait(false) will probably mean these can run the continuation on thread pool threads
-				MQ2DotNetCore.Logging.FileLoggingHelper
-					.LogInformation($"Delayed for 200ms with ConfigureAwait(false). [RandomId: {randomId}] [CommandArguments: {string.Join(", ", commandArguments)}]");
+				FileLoggingHelper.LogError(exc);
+				mq2Dependencies?.MQ2ChatWindow.WriteChatSafe($"{nameof(TestProgram)}.{nameof(RunAsync)} threw an exception: {exc}");
 			}
+		}
 
+		public static async Task TestCommandAsync(string[] commandArguments, CancellationToken cancellationToken)
+		{
+			int? randomId = null;
+			try
+			{
+				randomId = new Random().Next();
+
+				MQ2DotNetCore.Logging.FileLoggingHelper
+					.LogInformation($"Executing! [RandomId: {randomId}] [CommandArguments: {string.Join(", ", commandArguments)}]");
+
+				// 100 loops == ~20 seconds
+				for (var loopIndex = 0; loopIndex < 1500; ++loopIndex)
+				{
+					await Task.Delay(200, cancellationToken);
+
+					// These should all log the same managed thread id
+					if (loopIndex % 100 == 0)
+					{
+						MQ2DotNetCore.Logging.FileLoggingHelper
+							.LogInformation($"TestCommandAsync(..) [LoopIndex1: {loopIndex}] [RandomId: {randomId}] [CommandArguments: {string.Join(", ", commandArguments)}]");
+					}
+				}
+			}
+			catch (TaskCanceledException)
+			{
+				FileLoggingHelper.LogDebug($"{nameof(TestCommandAsync)} has been cancelled! [RandomId: {randomId}] [CommandArguments: {string.Join(", ", commandArguments)}]");
+			}
+			catch (Exception exc)
+			{
+				FileLoggingHelper.LogError(exc);
+			}
 		}
 	}
 }

@@ -79,7 +79,7 @@ namespace MQ2DotNetCore
 			{
 				try
 				{
-					FileLoggingHelper.LogCritical($"The InitializePlugin(..) encountered an exception:\n\n{exc.ToString()}");
+					FileLoggingHelper.LogCritical($"InitializePlugin(..) encountered an exception:\n\n{exc}\n");
 				}
 				catch (Exception)
 				{
@@ -119,137 +119,167 @@ namespace MQ2DotNetCore
 
 		private static void NetCancelCommandTask(string[] commandArguments)
 		{
-			if (commandArguments == null || commandArguments.Length < 1)
+			try
 			{
-				MQ2ChatWindow.WriteChatProgram("Usage: /netcorecanceltask <commandName|*>");
-				return;
+				if (commandArguments == null || commandArguments.Length < 1)
+				{
+					MQ2ChatWindow.WriteChatProgram("Usage: /netcorecanceltask <commandName|*>");
+					return;
+				}
+
+				var commandNameToStop = commandArguments[0];
+				var canceledTaskCount = commandNameToStop == "*"
+					? _mq2CommandRegistry.CancelAllAsyncCommandTasks()
+					: _mq2CommandRegistry.CancelAsyncCommandTask(commandNameToStop);
+
+				FileLoggingHelper.LogInformation($"Canceled {canceledTaskCount} async command tasks for command: {commandNameToStop}");
+				MQ2ChatWindow.Instance.WriteChatSafe($"Canceled {canceledTaskCount} async command tasks for command: {commandNameToStop}");
 			}
-
-			var commandNameToStop = commandArguments[0];
-			var canceledTaskCount = commandNameToStop == "*"
-				? _mq2CommandRegistry.CancelAllAsyncCommandTasks()
-				: _mq2CommandRegistry.CancelAsyncCommandTask(commandNameToStop);
-
-			FileLoggingHelper.LogInformation($"Canceled {canceledTaskCount} async command tasks for command: {commandNameToStop}");
-			MQ2ChatWindow.Instance.WriteChatSafe($"Canceled {canceledTaskCount} async command tasks for command: {commandNameToStop}");
+			catch (Exception exc)
+			{
+				FileLoggingHelper.LogError(exc);
+			}
 		}
 
 		private static void NetEndCommand(string[] commandArguments)
 		{
-			if (commandArguments == null || commandArguments.Length < 1)
+			try
 			{
-				MQ2ChatWindow.WriteChatProgram("Usage: /netcoreend <programName|*>");
-				return;
+				if (commandArguments == null || commandArguments.Length < 1)
+				{
+					MQ2ChatWindow.WriteChatProgram("Usage: /netcoreend <programName|*>");
+					return;
+				}
+
+
+				var programNameToStop = commandArguments[0];
+				if (programNameToStop == "*")
+				{
+					var wereAllStoppedSuccessfully = SubmoduleRegistry.Instance.StopAllPrograms();
+					if (wereAllStoppedSuccessfully)
+					{
+						FileLoggingHelper.LogDebug($"All programs stopped and unloaded successfully");
+						MQ2ChatWindow.WriteChatProgram($"All programs stopped and unloaded successfully");
+					}
+					else
+					{
+						FileLoggingHelper.LogWarning($"Failed to stop/unload one or more programs!");
+						MQ2ChatWindow.WriteChatProgramWarning($"Failed to stop/unload one or more programs!");
+					}
+
+					return;
+				}
+
+				var shouldSkipCancel = commandArguments.Skip(1).Any(commandArgument => commandArgument == "skipcancel");
+				if (shouldSkipCancel)
+				{
+					var wasStopped = SubmoduleRegistry.Instance.StopProgram(programNameToStop);
+					if (wasStopped)
+					{
+						FileLoggingHelper.LogDebug($"{programNameToStop} program stopped and unloaded successfully");
+						MQ2ChatWindow.WriteChatProgram($"{programNameToStop} program stopped and unloaded successfully");
+					}
+					else
+					{
+						FileLoggingHelper.LogWarning($"Failed to stop/unload {programNameToStop} program!");
+						MQ2ChatWindow.WriteChatProgramWarning($"Failed to stop/unload {programNameToStop} program!");
+					}
+				}
+
+				_mq2SynchronizationContext.SetExecuteAndRestore(() =>
+				{
+					FileLoggingHelper.LogDebug($"Scheduling {nameof(SubmoduleRegistry)}.{nameof(SubmoduleRegistry.TryStopProgramAsync)}(..) call to run on synchronization context for program name: {programNameToStop}");
+					Task? tryCancelTask = null;
+					Task<Task>? wrapperTask = null;
+					try
+					{
+						tryCancelTask = SubmoduleRegistry.Instance.TryStopProgramAsync(programNameToStop);
+						wrapperTask = Task.Factory.StartNew(
+							async () => await tryCancelTask,
+							CancellationToken.None,
+							TaskCreationOptions.None,
+							TaskScheduler.FromCurrentSynchronizationContext()
+						);
+					}
+					catch (Exception exc)
+					{
+						FileLoggingHelper.LogError($"Exception attempting to schedule the TryStopProgramAsync task:\n\n{exc}\n");
+						CleanupHelper.TryDispose(tryCancelTask);
+						CleanupHelper.TryDispose(wrapperTask);
+
+						// Try stopping the program without cancelling
+						SubmoduleRegistry.Instance.StopProgram(programNameToStop);
+					}
+				});
 			}
-
-
-			var programNameToStop = commandArguments[0];
-			if (programNameToStop == "*")
+			catch (Exception exc)
 			{
-				var wereAllStoppedSuccessfully = SubmoduleRegistry.Instance.StopAllPrograms();
-				if (wereAllStoppedSuccessfully)
-				{
-					FileLoggingHelper.LogDebug($"All programs stopped and unloaded successfully");
-					MQ2ChatWindow.WriteChatProgram($"All programs stopped and unloaded successfully");
-				}
-				else
-				{
-					FileLoggingHelper.LogWarning($"Failed to stop/unload one or more programs!");
-					MQ2ChatWindow.WriteChatProgramWarning($"Failed to stop/unload one or more programs!");
-				}
-
-				return;
+				FileLoggingHelper.LogError(exc);
 			}
-
-			var shouldSkipCancel = commandArguments.Skip(1).Any(commandArgument => commandArgument == "skipcancel");
-			if (shouldSkipCancel)
-			{
-				var wasStopped = SubmoduleRegistry.Instance.StopProgram(programNameToStop);
-				if (wasStopped)
-				{
-					FileLoggingHelper.LogDebug($"{programNameToStop} program stopped and unloaded successfully");
-					MQ2ChatWindow.WriteChatProgram($"{programNameToStop} program stopped and unloaded successfully");
-				}
-				else
-				{
-					FileLoggingHelper.LogWarning($"Failed to stop/unload {programNameToStop} program!");
-					MQ2ChatWindow.WriteChatProgramWarning($"Failed to stop/unload {programNameToStop} program!");
-				}
-			}
-
-			_mq2SynchronizationContext.SetExecuteAndRestore(() =>
-			{
-				FileLoggingHelper.LogDebug($"Scheduling {nameof(SubmoduleRegistry)}.{nameof(SubmoduleRegistry.TryStopProgramAsync)}(..) call to run on synchronization context for program name: {programNameToStop}");
-				Task? tryCancelTask = null;
-				Task<Task>? wrapperTask = null;
-				try
-				{
-					tryCancelTask = SubmoduleRegistry.Instance.TryStopProgramAsync(programNameToStop);
-					wrapperTask = Task.Factory.StartNew(
-						async () => await tryCancelTask,
-						CancellationToken.None,
-						TaskCreationOptions.None,
-						TaskScheduler.FromCurrentSynchronizationContext()
-					);
-				}
-				catch (Exception exc)
-				{
-					FileLoggingHelper.LogError($"Exception attempting to schedule the TryStopProgramAsync task:\n\n{exc}\n");
-					CleanupHelper.TryDispose(tryCancelTask);
-					CleanupHelper.TryDispose(wrapperTask);
-
-					// Try stopping the program without cancelling
-					SubmoduleRegistry.Instance.StopProgram(programNameToStop);
-				}
-			});
 		}
 
 		private static void NetListCommand(string[] commandArguments)
 		{
-			SubmoduleRegistry.Instance.PrintRunningPrograms();
+			try
+			{
+				SubmoduleRegistry.Instance.PrintRunningPrograms();
 
-			_mq2CommandRegistry.PrintRunningCommands();
+				_mq2CommandRegistry.PrintRegisteredCommands();
+
+				_mq2CommandRegistry.PrintRunningCommands();
+			}
+			catch (Exception exc)
+			{
+				FileLoggingHelper.LogError(exc);
+			}
 		}
 
 		private static void NetRunCommand(string[] commandArguments)
 		{
-			if (commandArguments == null || commandArguments.Length == 0)
+			try
 			{
-				MQ2ChatWindow.WriteChatProgram("Usage: /netcorerun <program> [<arg1> <arg2> ...]");
-				return;
+				if (commandArguments == null || commandArguments.Length == 0)
+				{
+					MQ2ChatWindow.WriteChatProgram("Usage: /netcorerun <program> [<arg1> <arg2> ...]");
+					return;
+				}
+
+				var submoduleProgramName = commandArguments[0];
+				_mq2SynchronizationContext.SetExecuteAndRestore(() =>
+				{
+					try
+					{
+						var submoduleCommandRegistry = new MQ2SubmoduleCommandRegistry(_mq2CommandRegistry, submoduleProgramName);
+						var submoduleDependencies = new MQ2Dependencies(
+							submoduleCommandRegistry,
+							MQ2ChatWindow.Instance,
+							_mq2SynchronizationContext,
+							submoduleProgramName
+						);
+
+						var wasStarted = SubmoduleRegistry.Instance.StartProgram(submoduleProgramName, commandArguments, submoduleDependencies);
+						if (wasStarted)
+						{
+							FileLoggingHelper.LogDebug($"{commandArguments[0]} program started successfully");
+							MQ2ChatWindow.WriteChatProgram($"{commandArguments[0]} program started successfully");
+						}
+						else
+						{
+							FileLoggingHelper.LogWarning($"Failed to start {commandArguments[0]} program!");
+							MQ2ChatWindow.WriteChatProgramWarning($"Failed to start {commandArguments[0]} program!");
+						}
+					}
+					catch (Exception exc)
+					{
+						FileLoggingHelper.LogError(exc);
+						MQ2ChatWindow.WriteChatGeneralError($"{nameof(NetRunCommand)} threw an exception: {exc}");
+					}
+				});
 			}
-
-			var submoduleProgramName = commandArguments[0];
-			_mq2SynchronizationContext.SetExecuteAndRestore(() =>
+			catch (Exception exc)
 			{
-				try
-				{
-					var submoduleCommandRegistry = new MQ2SubmoduleCommandRegistry(_mq2CommandRegistry, submoduleProgramName);
-					var submoduleDependencies = new MQ2Dependencies(
-						submoduleCommandRegistry,
-						MQ2ChatWindow.Instance,
-						_mq2SynchronizationContext,
-						submoduleProgramName
-					);
-
-					var wasStarted = SubmoduleRegistry.Instance.StartProgram(submoduleProgramName, commandArguments, submoduleDependencies);
-					if (wasStarted)
-					{
-						FileLoggingHelper.LogDebug($"{commandArguments[0]} program started successfully");
-						MQ2ChatWindow.WriteChatProgram($"{commandArguments[0]} program started successfully");
-					}
-					else
-					{
-						FileLoggingHelper.LogWarning($"Failed to start {commandArguments[0]} program!");
-						MQ2ChatWindow.WriteChatProgramWarning($"Failed to start {commandArguments[0]} program!");
-					}
-				}
-				catch (Exception exc)
-				{
-					FileLoggingHelper.LogError(exc);
-					MQ2ChatWindow.WriteChatGeneralError($"{nameof(NetRunCommand)} threw an exception: {exc}");
-				}
-			});
+				FileLoggingHelper.LogError(exc);
+			}
 		}
 
 
@@ -285,9 +315,22 @@ namespace MQ2DotNetCore
 
 		private static readonly fMQDrawHUD _handleDrawHUD = HandleDrawHUD;
 
+		private static long drawHudCount = 0;
 		private static void HandleDrawHUD()
 		{
-			FileLoggingHelper.LogTrace("Method was called");
+#if DEBUG
+			Interlocked.Increment(ref drawHudCount);
+
+			if ((drawHudCount % 10_000) == 0)
+			{
+				FileLoggingHelper.LogTrace($"HandleDrawHUD fired. [DrawHUDCount: {drawHudCount}]");
+			}
+
+			if (drawHudCount > 1_000_000)
+			{
+				Interlocked.Exchange(ref drawHudCount, 0);
+			}
+#endif
 		}
 
 
@@ -311,7 +354,9 @@ namespace MQ2DotNetCore
 
 		private static void HandleAddGroundItem(IntPtr newGroundItem)
 		{
+#if DEBUG
 			FileLoggingHelper.LogTrace("Method was called");
+#endif
 		}
 
 
@@ -320,7 +365,9 @@ namespace MQ2DotNetCore
 
 		private static void HandleRemoveGroundItem(IntPtr groundItem)
 		{
+#if DEBUG
 			FileLoggingHelper.LogTrace("Method was called");
+#endif
 		}
 
 
@@ -343,15 +390,37 @@ namespace MQ2DotNetCore
 
 		private static readonly fMQPulse _handlePulse = HandlePulse;
 
-		private static long pulseCount = 0;
+		private static long pulseCount = 1;
 		private static void HandlePulse()
 		{
-			_mq2SynchronizationContext.DoEvents(true);
-
-			if (pulseCount > 10_000)
+			try
 			{
-				_mq2CommandRegistry.ProcessAsyncCommandTasks();
-				Interlocked.Exchange(ref pulseCount, 0);
+				_mq2SynchronizationContext.DoEvents(true);
+
+				Interlocked.Increment(ref pulseCount);
+
+				if ((pulseCount % 250) == 0)
+				{
+					SubmoduleRegistry.Instance.ProcessRunningProgramTasks();
+				}
+
+				if ((pulseCount % 350) == 0)
+				{
+					_mq2CommandRegistry.ProcessAsyncCommandTasks();
+				}
+
+				if (pulseCount > 1_000_000)
+				{
+#if DEBUG
+					FileLoggingHelper.LogTrace("Resetting pulse count to 1");
+#endif
+
+					Interlocked.Exchange(ref pulseCount, 1);
+				}
+			}
+			catch (Exception exc)
+			{
+				FileLoggingHelper.LogError(exc);
 			}
 		}
 
@@ -407,14 +476,18 @@ namespace MQ2DotNetCore
 
 		private static void HandleAddSpawn(IntPtr spawn)
 		{
+#if DEBUG
 			FileLoggingHelper.LogTrace("Method was called");
+#endif
 		}
 
 		private static readonly fMQSpawn _handleRemoveSpawn = HandleRemoveSpawn;
 
 		private static void HandleRemoveSpawn(IntPtr spawn)
 		{
+#if DEBUG
 			FileLoggingHelper.LogTrace("Method was called");
+#endif
 		}
 
 
@@ -426,7 +499,10 @@ namespace MQ2DotNetCore
 
 		private static uint HandleWriteChatColor(string line, uint color, uint filter)
 		{
+#if DEBUG
 			FileLoggingHelper.LogTrace("Method was called");
+#endif
+
 			return 0;
 		}
 
@@ -439,7 +515,10 @@ namespace MQ2DotNetCore
 
 		private static void HandleZoned()
 		{
-			FileLoggingHelper.LogDebug("Method was called");
+#if DEBUG
+			FileLoggingHelper.LogTrace("Method was called");
+#endif
+
 		}
 	}
 }
