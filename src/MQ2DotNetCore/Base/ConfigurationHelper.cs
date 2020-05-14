@@ -24,7 +24,7 @@ namespace MQ2DotNetCore.Base
 					return _configuration;
 				}
 
-				var configurationPath = Path.Combine(AssemblyInformation.AssemblyDirectory, "MQ2DotNetCore.appsettings.json");
+				var configurationPath = Path.Combine(MQ2DotNetCoreAssemblyInformation.AssemblyDirectory, "MQ2DotNetCore.appsettings.json");
 				if (!File.Exists(configurationPath))
 				{
 					return null;

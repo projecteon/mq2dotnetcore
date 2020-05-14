@@ -13,6 +13,8 @@ namespace MQ2DotNetCore
 {
 	public static class LoaderEntryPoint
 	{
+		private static SafeLibraryHandle? _loaderLibraryHandle;
+
 		private static readonly MQ2CommandRegistry _mq2CommandRegistry;
 		private static readonly MQ2SynchronizationContext _mq2SynchronizationContext;
 
@@ -27,6 +29,7 @@ namespace MQ2DotNetCore
 			try
 			{
 				FileLoggingHelper.LogInformation("The InitializePlugin(..) method is executing...");
+				FileLoggingHelper.LogDebug($"AssemblyName: {MQ2DotNetCoreAssemblyInformation.AssemblyName.Name},   AssemblyVersion: {MQ2DotNetCoreAssemblyInformation.Version}");
 
 				TaskScheduler.UnobservedTaskException += HandleUnobservedTaskException;
 
@@ -34,25 +37,29 @@ namespace MQ2DotNetCore
 				// Here we set set the exported function pointers to our managed function delegates in this class
 
 				// TODO: Consider passing/parsing the loader dll path through parameters
-				var loaderDllPath = Path.Combine(AssemblyInformation.AssemblyDirectory, @"..\MQ2DotNetLoader.dll");
-				FileLoggingHelper.LogDebug($"Loader DLL Path: {loaderDllPath}");
+				FileLoggingHelper.LogDebug($"Loader DLL Path: {MQ2DotNetCoreLoader.AbsoluteDllPath}");
+				_loaderLibraryHandle = Kernel32.NativeMethods.LoadLibrary(MQ2DotNetCoreLoader.AbsoluteDllPath);
+				if (_loaderLibraryHandle == null)
+				{
+					FileLoggingHelper.LogError($"{nameof(_loaderLibraryHandle)} is null");
+					return 1;
+				}
 
-				var mq2DotNetCoreLoaderLibraryHandle = Kernel32.NativeMethods.LoadLibrary(loaderDllPath);
-				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(mq2DotNetCoreLoaderLibraryHandle, "g_pfShutdownPlugin"), Marshal.GetFunctionPointerForDelegate(_shutdownPlugin));
-				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(mq2DotNetCoreLoaderLibraryHandle, "g_pfOnCleanUI"), Marshal.GetFunctionPointerForDelegate(_handleCleanUI));
-				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(mq2DotNetCoreLoaderLibraryHandle, "g_pfOnReloadUI"), Marshal.GetFunctionPointerForDelegate(_handleReloadUI));
-				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(mq2DotNetCoreLoaderLibraryHandle, "g_pfOnDrawHUD"), Marshal.GetFunctionPointerForDelegate(_handleDrawHUD));
-				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(mq2DotNetCoreLoaderLibraryHandle, "g_pfSetGameState"), Marshal.GetFunctionPointerForDelegate(_setGameState));
-				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(mq2DotNetCoreLoaderLibraryHandle, "g_pfOnPulse"), Marshal.GetFunctionPointerForDelegate(_handlePulse));
-				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(mq2DotNetCoreLoaderLibraryHandle, "g_pfOnIncomingChat"), Marshal.GetFunctionPointerForDelegate(_handleIncomingChat));
-				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(mq2DotNetCoreLoaderLibraryHandle, "g_pfOnWriteChatColor"), Marshal.GetFunctionPointerForDelegate(_handleWriteChatColor));
-				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(mq2DotNetCoreLoaderLibraryHandle, "g_pfOnAddSpawn"), Marshal.GetFunctionPointerForDelegate(_handleAddSpawn));
-				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(mq2DotNetCoreLoaderLibraryHandle, "g_pfOnRemoveSpawn"), Marshal.GetFunctionPointerForDelegate(_handleRemoveSpawn));
-				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(mq2DotNetCoreLoaderLibraryHandle, "g_pfOnAddGroundItem"), Marshal.GetFunctionPointerForDelegate(_handleAddGroundItem));
-				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(mq2DotNetCoreLoaderLibraryHandle, "g_pfOnRemoveGroundItem"), Marshal.GetFunctionPointerForDelegate(_handleRemoveGroundItem));
-				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(mq2DotNetCoreLoaderLibraryHandle, "g_pfBeginZone"), Marshal.GetFunctionPointerForDelegate(_handleBeginZone));
-				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(mq2DotNetCoreLoaderLibraryHandle, "g_pfEndZone"), Marshal.GetFunctionPointerForDelegate(_handleEndZone));
-				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(mq2DotNetCoreLoaderLibraryHandle, "g_pfOnZoned"), Marshal.GetFunctionPointerForDelegate(_handleZoned));
+				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(_loaderLibraryHandle, "g_pfShutdownPlugin"), Marshal.GetFunctionPointerForDelegate(_shutdownPlugin));
+				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(_loaderLibraryHandle, "g_pfOnCleanUI"), Marshal.GetFunctionPointerForDelegate(_handleCleanUI));
+				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(_loaderLibraryHandle, "g_pfOnReloadUI"), Marshal.GetFunctionPointerForDelegate(_handleReloadUI));
+				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(_loaderLibraryHandle, "g_pfOnDrawHUD"), Marshal.GetFunctionPointerForDelegate(_handleDrawHUD));
+				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(_loaderLibraryHandle, "g_pfSetGameState"), Marshal.GetFunctionPointerForDelegate(_setGameState));
+				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(_loaderLibraryHandle, "g_pfOnPulse"), Marshal.GetFunctionPointerForDelegate(_handlePulse));
+				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(_loaderLibraryHandle, "g_pfOnIncomingChat"), Marshal.GetFunctionPointerForDelegate(_handleIncomingChat));
+				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(_loaderLibraryHandle, "g_pfOnWriteChatColor"), Marshal.GetFunctionPointerForDelegate(_handleWriteChatColor));
+				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(_loaderLibraryHandle, "g_pfOnAddSpawn"), Marshal.GetFunctionPointerForDelegate(_handleAddSpawn));
+				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(_loaderLibraryHandle, "g_pfOnRemoveSpawn"), Marshal.GetFunctionPointerForDelegate(_handleRemoveSpawn));
+				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(_loaderLibraryHandle, "g_pfOnAddGroundItem"), Marshal.GetFunctionPointerForDelegate(_handleAddGroundItem));
+				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(_loaderLibraryHandle, "g_pfOnRemoveGroundItem"), Marshal.GetFunctionPointerForDelegate(_handleRemoveGroundItem));
+				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(_loaderLibraryHandle, "g_pfBeginZone"), Marshal.GetFunctionPointerForDelegate(_handleBeginZone));
+				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(_loaderLibraryHandle, "g_pfEndZone"), Marshal.GetFunctionPointerForDelegate(_handleEndZone));
+				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(_loaderLibraryHandle, "g_pfOnZoned"), Marshal.GetFunctionPointerForDelegate(_handleZoned));
 
 				FileLoggingHelper.LogDebug($"Done registering delegates to the loader dll's exported function pointer addresses!");
 
@@ -109,7 +116,7 @@ namespace MQ2DotNetCore
 
 				eventArgs?.SetObserved();
 
-				MQ2ChatWindow.Instance.WriteChatSafe($"{nameof(HandleUnobservedTaskException)} was called. See the log file for more information.");
+				MQ2.Instance.WriteChatSafe($"{nameof(HandleUnobservedTaskException)} was called. See the log file for more information.");
 			}
 			catch (Exception exc)
 			{
@@ -123,7 +130,7 @@ namespace MQ2DotNetCore
 			{
 				if (commandArguments == null || commandArguments.Length < 1)
 				{
-					MQ2ChatWindow.WriteChatProgram("Usage: /netcorecanceltask <commandName|*>");
+					MQ2.WriteChatProgram("Usage: /netcorecanceltask <commandName|*>");
 					return;
 				}
 
@@ -133,7 +140,7 @@ namespace MQ2DotNetCore
 					: _mq2CommandRegistry.CancelAsyncCommandTask(commandNameToStop);
 
 				FileLoggingHelper.LogInformation($"Canceled {canceledTaskCount} async command tasks for command: {commandNameToStop}");
-				MQ2ChatWindow.Instance.WriteChatSafe($"Canceled {canceledTaskCount} async command tasks for command: {commandNameToStop}");
+				MQ2.Instance.WriteChatSafe($"Canceled {canceledTaskCount} async command tasks for command: {commandNameToStop}");
 			}
 			catch (Exception exc)
 			{
@@ -147,7 +154,7 @@ namespace MQ2DotNetCore
 			{
 				if (commandArguments == null || commandArguments.Length < 1)
 				{
-					MQ2ChatWindow.WriteChatProgram("Usage: /netcoreend <programName|*>");
+					MQ2.WriteChatProgram("Usage: /netcoreend <programName|*>");
 					return;
 				}
 
@@ -159,12 +166,12 @@ namespace MQ2DotNetCore
 					if (wereAllStoppedSuccessfully)
 					{
 						FileLoggingHelper.LogDebug($"All programs stopped and unloaded successfully");
-						MQ2ChatWindow.WriteChatProgram($"All programs stopped and unloaded successfully");
+						MQ2.WriteChatProgram($"All programs stopped and unloaded successfully");
 					}
 					else
 					{
 						FileLoggingHelper.LogWarning($"Failed to stop/unload one or more programs!");
-						MQ2ChatWindow.WriteChatProgramWarning($"Failed to stop/unload one or more programs!");
+						MQ2.WriteChatProgramWarning($"Failed to stop/unload one or more programs!");
 					}
 
 					return;
@@ -177,12 +184,12 @@ namespace MQ2DotNetCore
 					if (wasStopped)
 					{
 						FileLoggingHelper.LogDebug($"{programNameToStop} program stopped and unloaded successfully");
-						MQ2ChatWindow.WriteChatProgram($"{programNameToStop} program stopped and unloaded successfully");
+						MQ2.WriteChatProgram($"{programNameToStop} program stopped and unloaded successfully");
 					}
 					else
 					{
 						FileLoggingHelper.LogWarning($"Failed to stop/unload {programNameToStop} program!");
-						MQ2ChatWindow.WriteChatProgramWarning($"Failed to stop/unload {programNameToStop} program!");
+						MQ2.WriteChatProgramWarning($"Failed to stop/unload {programNameToStop} program!");
 					}
 				}
 
@@ -240,7 +247,7 @@ namespace MQ2DotNetCore
 			{
 				if (commandArguments == null || commandArguments.Length == 0)
 				{
-					MQ2ChatWindow.WriteChatProgram("Usage: /netcorerun <program> [<arg1> <arg2> ...]");
+					MQ2.WriteChatProgram("Usage: /netcorerun <program> [<arg1> <arg2> ...]");
 					return;
 				}
 
@@ -250,29 +257,38 @@ namespace MQ2DotNetCore
 					try
 					{
 						var submoduleCommandRegistry = new MQ2SubmoduleCommandRegistry(_mq2CommandRegistry, submoduleProgramName);
+						var submoduleEventRegistry = new MQ2SubmoduleEventRegistry(submoduleProgramName);
+
+						// give the submodule it's own type factory to register type's against, if they wish
+						var submoduleTypeFactory = new MQ2TypeFactory(MQ2TypeFactory.RootFactory); 
 						var submoduleDependencies = new MQ2Dependencies(
+							new ChatUtilities(submoduleEventRegistry),
 							submoduleCommandRegistry,
-							MQ2ChatWindow.Instance,
+							submoduleEventRegistry,
+							MQ2.Instance,
 							_mq2SynchronizationContext,
-							submoduleProgramName
+							submoduleTypeFactory,
+							new MQ2Spawns(submoduleTypeFactory),
+							submoduleProgramName,
+							new MQ2Tlo(submoduleTypeFactory)
 						);
 
 						var wasStarted = SubmoduleRegistry.Instance.StartProgram(submoduleProgramName, commandArguments, submoduleDependencies);
 						if (wasStarted)
 						{
 							FileLoggingHelper.LogDebug($"{commandArguments[0]} program started successfully");
-							MQ2ChatWindow.WriteChatProgram($"{commandArguments[0]} program started successfully");
+							MQ2.WriteChatProgram($"{commandArguments[0]} program started successfully");
 						}
 						else
 						{
 							FileLoggingHelper.LogWarning($"Failed to start {commandArguments[0]} program!");
-							MQ2ChatWindow.WriteChatProgramWarning($"Failed to start {commandArguments[0]} program!");
+							MQ2.WriteChatProgramWarning($"Failed to start {commandArguments[0]} program!");
 						}
 					}
 					catch (Exception exc)
 					{
 						FileLoggingHelper.LogError(exc);
-						MQ2ChatWindow.WriteChatGeneralError($"{nameof(NetRunCommand)} threw an exception: {exc}");
+						MQ2.WriteChatGeneralError($"{nameof(NetRunCommand)} threw an exception: {exc}");
 					}
 				});
 			}

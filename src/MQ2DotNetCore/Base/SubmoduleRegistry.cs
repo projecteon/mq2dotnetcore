@@ -2,7 +2,6 @@
 using MQ2DotNetCore.MQ2Api;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -88,7 +87,7 @@ namespace MQ2DotNetCore.Base
 
 					var ellapsedMilliseconds = (DateTime.Now - submoduleProgramWrapper.StartTime).TotalMilliseconds;
 					FileLoggingHelper.LogDebug($"{programName} is currently running. [Ellapised Time: {ellapsedMilliseconds} ms ]");
-					MQ2ChatWindow.Instance.WriteChatSafe($"{nameof(PrintRunningPrograms)}: {programName} is currently running. [Ellapised Time: {ellapsedMilliseconds} ms ]");
+					MQ2.Instance.WriteChatSafe($"{nameof(PrintRunningPrograms)}: {programName} is currently running. [Ellapised Time: {ellapsedMilliseconds} ms ]");
 				}
 				catch (Exception exc)
 				{
@@ -194,7 +193,7 @@ namespace MQ2DotNetCore.Base
 					}
 
 
-					var submoduleFilePath = Path.Combine(AssemblyInformation.AssemblyDirectory, "Programs", submoduleProgramName, $"{submoduleProgramName}.dll");
+					var submoduleFilePath = Path.Combine(MQ2DotNetCoreAssemblyInformation.AssemblyDirectory, "Programs", submoduleProgramName, $"{submoduleProgramName}.dll");
 					if (!File.Exists(submoduleFilePath))
 					{
 						FileLoggingHelper.LogWarning($"Submodule program file not found: {submoduleFilePath}");
@@ -218,7 +217,7 @@ namespace MQ2DotNetCore.Base
 					{
 						FileLoggingHelper.LogWarning($"Did not find a program type with name: {submoduleProgramName}, falling back to the first {nameof(IMQ2Program)} type found.");
 						submoduleProgramClassType = submoduleProgramTypes.FirstOrDefault();
-					}	
+					}
 
 					if (submoduleProgramClassType == null)
 					{
@@ -257,10 +256,10 @@ namespace MQ2DotNetCore.Base
 					var wrapper = new SubmoduleProgramWrapper(
 						assemblyLoadContext,
 						cancellationTokenSource,
+						mq2Dependencies,
 						submoduleProgramName,
 						submoduleProgramInstance,
 						startTime,
-						mq2Dependencies.CommandRegistry,
 						submoduleProgramTask
 					);
 
@@ -370,7 +369,7 @@ namespace MQ2DotNetCore.Base
 
 				StopProgram(submoduleProgramName);
 				FileLoggingHelper.LogDebug($"Done stopping program: {submoduleProgramName}");
-				MQ2ChatWindow.Instance.WriteChatSafe($"Done stopping program: {submoduleProgramName}");
+				MQ2.Instance.WriteChatSafe($"Done stopping program: {submoduleProgramName}");
 
 				return taskCancelStatus;
 			}
@@ -410,29 +409,29 @@ namespace MQ2DotNetCore.Base
 			public SubmoduleProgramWrapper(
 				AssemblyLoadContext assemblyLoadContext,
 				CancellationTokenSource cancellationTokenSource,
+				MQ2Dependencies mq2Dependencies,
 				string name,
 				IMQ2Program programInstance,
 				DateTime startTime,
-				MQ2SubmoduleCommandRegistry submoduleCommandRegistry,
 				Task task
 			)
 			{
 				AssemblyLoadContext = assemblyLoadContext;
 				CancellationTokenSource = cancellationTokenSource;
+				MQ2Dependencies = mq2Dependencies;
 				Name = name;
 				ProgramInstance = programInstance;
 				StartTime = startTime;
-				SubmoduleCommandRegistry = submoduleCommandRegistry;
 				Task = task;
 			}
 
 			public AssemblyLoadContext? AssemblyLoadContext { get; private set; }
 			public CancellationTokenSource? CancellationTokenSource { get; private set; }
 			public bool HasCancelled { get; private set; }
+			public MQ2Dependencies MQ2Dependencies { get; private set; }
 			public string Name { get; private set; }
 			public IMQ2Program? ProgramInstance { get; private set; }
 			public DateTime StartTime { get; private set; }
-			public MQ2SubmoduleCommandRegistry SubmoduleCommandRegistry { get; private set; } 
 			public Task? Task { get; private set; }
 
 			/// <inheritdoc />
@@ -452,7 +451,7 @@ namespace MQ2DotNetCore.Base
 					CleanupHelper.TryDispose(disposableProgramInstance);
 				}
 
-				CleanupHelper.TryDispose(SubmoduleCommandRegistry);
+				CleanupHelper.TryDispose(MQ2Dependencies);
 
 				CleanupHelper.TryUnload(AssemblyLoadContext);
 				AssemblyLoadContext = null;

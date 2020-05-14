@@ -1,3 +1,4 @@
+﻿using System.Threading;
 using System.Threading.Tasks;
 
 namespace RhinoBot.MissionHelpers
@@ -9,7 +10,7 @@ namespace RhinoBot.MissionHelpers
 		{
 		}
 
-		public async Task RunMissionAsync(string[] commandArguments)
+		public async Task RunMissionAsync(string[] commandArguments, CancellationToken cancellationToken)
 		{
 			var missionName = commandArguments?.Length > 0 ? commandArguments[0] : null;
 			if (string.IsNullOrEmpty(missionName))
@@ -27,7 +28,7 @@ namespace RhinoBot.MissionHelpers
 
 			foreach (var nextAction in missionActions)
 			{
-				await Bot.ToonCommands.ExecuteActionAsync(nextAction).ConfigureAwait(false);
+				await Bot.ToonCommands.ExecuteActionAsync(nextAction, cancellationToken);
 			}
 		}
 	}

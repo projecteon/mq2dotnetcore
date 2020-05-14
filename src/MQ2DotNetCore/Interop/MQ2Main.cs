@@ -40,6 +40,35 @@ namespace MQ2DotNetCore.Interop
 
 			[DllImport(MQ2Main.DLL, EntryPoint = "WriteChatfSafe", CallingConvention = CallingConvention.Cdecl)]
 			internal static extern void MQ2WriteChatfSafe([MarshalAs(UnmanagedType.LPStr)] string buffer);
+
+
+			// DATA TYPES
+			[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+			internal delegate bool fMQData([MarshalAs(UnmanagedType.LPStr)] string szIndex, out MQ2TypeVar ret);
+
+			[DllImport(MQ2Main.DLL, CallingConvention = CallingConvention.Cdecl)]
+			internal static extern IntPtr FindMQ2DataType(string name);
+
+			[DllImport(MQ2Main.DLL, EntryPoint = "FindMQ2Data", CallingConvention = CallingConvention.Cdecl)]
+			internal static extern IntPtr FindMQ2DataIntPtr([MarshalAs(UnmanagedType.LPStr)] string szName);
+
+			[DllImport(MQ2Main.DLL, CallingConvention = CallingConvention.Cdecl)]
+			internal static extern IntPtr GetItemList();
+
+
+
+			[StructLayout(LayoutKind.Explicit, Size = 68)]
+			internal struct MQ2DataItem
+			{
+				[MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)]
+				[FieldOffset(0)]
+				public byte[] Name;
+
+				[FieldOffset(64)]
+				public IntPtr pFunction;
+
+				public fMQData Function => Marshal.GetDelegateForFunctionPointer<fMQData>(pFunction);
+			}
 		}
 	}
 }

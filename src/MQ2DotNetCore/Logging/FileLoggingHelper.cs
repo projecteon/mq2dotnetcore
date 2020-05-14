@@ -13,7 +13,7 @@ namespace MQ2DotNetCore.Logging
 	/// </summary>
 	public static class FileLoggingHelper
 	{
-		private static readonly string _logFilePath = Path.Combine(AssemblyInformation.AssemblyDirectory, "debug_entry_point.log");
+		private static readonly string _logFilePath = Path.Combine(MQ2DotNetCoreAssemblyInformation.AssemblyDirectory, "debug_entry_point.log");
 
 		public static LogLevel GetLogLevel()
 		{
@@ -25,7 +25,7 @@ namespace MQ2DotNetCore.Logging
 			{
 				try
 				{
-					File.AppendAllText(Path.Combine(AssemblyInformation.AssemblyDirectory, "debug_entry_point.log"), $"[{DateTime.Now} {nameof(GetLogLevel)}()]  {exc}\n\n");
+					File.AppendAllText(Path.Combine(MQ2DotNetCoreAssemblyInformation.AssemblyDirectory, "debug_entry_point.log"), $"[{DateTime.Now} {nameof(GetLogLevel)}()]  {exc}\n\n");
 				}
 				catch (Exception)
 				{

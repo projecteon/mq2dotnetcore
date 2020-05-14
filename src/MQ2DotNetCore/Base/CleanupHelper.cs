@@ -8,6 +8,14 @@ namespace MQ2DotNetCore.Base
 {
 	public static class CleanupHelper
 	{
+		public static void DisposedCheck(bool isDisposed, string objectName)
+		{
+			if (isDisposed)
+			{
+				throw new ObjectDisposedException(objectName);
+			}
+		}
+
 		public static bool IsTaskStopped(Task? task)
 		{
 			if (task == null)

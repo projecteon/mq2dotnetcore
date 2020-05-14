@@ -1,3 +1,5 @@
+﻿using MQ2DotNetCore.Logging;
+
 namespace RhinoBot
 {
 	public abstract class CommandBase
@@ -16,6 +18,7 @@ namespace RhinoBot
 		{
 			if (_logDebugEnabled)
 			{
+				FileLoggingHelper.LogDebug(message);
 				Bot.Mq2.WriteChatSafe(message);
 			}
 		}

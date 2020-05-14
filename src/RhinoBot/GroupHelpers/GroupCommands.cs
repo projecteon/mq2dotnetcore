@@ -1,8 +1,9 @@
-﻿using MQ2DotNet.MQ2API.DataTypes;
+﻿using MQ2DotNetCore.MQ2Api.DataTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RhinoBot.GroupHelpers
@@ -15,12 +16,12 @@ namespace RhinoBot.GroupHelpers
 		{
 		}
 
-		public async Task FormGroupAsync(string[] commandArguments)
+		public async Task FormGroupAsync(string[] commandArguments, CancellationToken cancellationToken)
 		{
 			Bot.Mq2.WriteChatSafe($"{nameof(GroupCommands)}.{nameof(FormGroupAsync)}(..) is executing...");
 			try
 			{
-				await Task.Delay(500).ConfigureAwait(false);
+				await Task.Delay(500, cancellationToken);
 
 				var groupName = commandArguments?.FirstOrDefault() ?? "Default";
 				if (string.IsNullOrEmpty(groupName))
@@ -59,18 +60,18 @@ namespace RhinoBot.GroupHelpers
 				foreach (var nextGroupMemberName in groupSettings.Members.Skip(1))
 				{
 					InviteToGroup(firstGroupMemberName, nextGroupMemberName);
-					await Task.Delay(100).ConfigureAwait(false);
+					await Task.Delay(100, cancellationToken);
 				}
 
 				// Wait for them to pickup the invites
-				await Task.Delay(2000);
+				await Task.Delay(2000, cancellationToken);
 
 				LogDebug($"{nameof(GroupCommands)}.{nameof(FormGroupAsync)}(..): accepting invites...");
 				foreach (var nextGroupMemberName in groupSettings.Members.Skip(1))
 				{
 					LogDebug($"{nameof(GroupCommands)}.{nameof(FormGroupAsync)}(..): accepting invite on {nextGroupMemberName}");
 
-					var joinedGroup = await TryAcceptInviteAsync(nextGroupMemberName).ConfigureAwait(false);
+					var joinedGroup = await TryAcceptInviteAsync(nextGroupMemberName, cancellationToken);
 					if (!joinedGroup)
 					{
 						Bot.Mq2.WriteChatSafe($"{nameof(GroupCommands)}.{nameof(FormGroupAsync)}(..): Failed to accept the invite on {nextGroupMemberName}!");
@@ -78,12 +79,15 @@ namespace RhinoBot.GroupHelpers
 					}
 				}
 
-				await Task.Delay(500);
+				await Task.Delay(500, cancellationToken);
 
-				LogDebug($"{nameof(GroupCommands)}.{nameof(FormGroupAsync)}(..): setting group leader to {groupSettings.Leader}...");
-				SetGroupLeader(firstGroupMemberName, groupSettings.Leader);
+				if (!string.IsNullOrEmpty(groupSettings.Leader))
+				{
+					LogDebug($"{nameof(GroupCommands)}.{nameof(FormGroupAsync)}(..): setting group leader to {groupSettings.Leader}...");
+					SetGroupLeader(firstGroupMemberName, groupSettings.Leader);
+				}
 
-				await Task.Delay(500);
+				await Task.Delay(500, cancellationToken);
 			}
 			catch (Exception exc)
 			{
@@ -100,7 +104,7 @@ namespace RhinoBot.GroupHelpers
 			return GetGroupMemberNames(Bot.Tlo.Group);
 		}
 
-		public IReadOnlyCollection<string> GetGroupMemberNames(GroupType group)
+		public IReadOnlyCollection<string> GetGroupMemberNames(GroupType? group)
 		{
 			var groupMemberCount = group?.Members ?? 0;
 			if (groupMemberCount < 1)
@@ -111,7 +115,7 @@ namespace RhinoBot.GroupHelpers
 			var groupMemberNames = new List<string>();
 			for (int groupMemberIndex = 1; groupMemberIndex <= groupMemberCount; ++groupMemberIndex)
 			{
-				var nextGroupMemberName = Bot.Tlo.Group.Member[groupMemberIndex]?.Name;
+				var nextGroupMemberName = Bot.Tlo.Group?.Member[groupMemberIndex]?.Name;
 				if (!string.IsNullOrWhiteSpace(nextGroupMemberName))
 				{
 					groupMemberNames.Add(nextGroupMemberName);
@@ -186,12 +190,12 @@ namespace RhinoBot.GroupHelpers
 				? $"/makeleader {newGroupLeader}"
 				: $"/bct {currentGroupLeader} //makeleader {newGroupLeader}");
 
-		public async Task<bool> TryAcceptInviteAsync(string groupMemberNameToAccept)
+		public async Task<bool> TryAcceptInviteAsync(string groupMemberNameToAccept, CancellationToken cancellationToken)
 		{
 			var acceptInviteCount = 0;
 
 			// Multi-threading issue or bug with index access that causes this to return the wrong person
-			GroupMemberType? nextGroupMember = Bot.Tlo.Group.Member[groupMemberNameToAccept];
+			GroupMemberType? nextGroupMember = Bot.Tlo.Group?.Member[groupMemberNameToAccept];
 
 			var isCorrectGroupMember = nextGroupMember?.Name == groupMemberNameToAccept;
 			LogDebug($"Inside {nameof(GroupCommands)}.{nameof(TryAcceptInviteAsync)}(..) for {groupMemberNameToAccept}, isCorrectGroupMember: {isCorrectGroupMember}");
@@ -201,9 +205,9 @@ namespace RhinoBot.GroupHelpers
 				Bot.Mq2.DoCommand($"/bct {groupMemberNameToAccept} //invite");
 				++acceptInviteCount;
 
-				await Task.Delay(1000).ConfigureAwait(false);
+				await Task.Delay(1000, cancellationToken);
 
-				nextGroupMember = Bot.Tlo.Group.Member[groupMemberNameToAccept];
+				nextGroupMember = Bot.Tlo.Group?.Member[groupMemberNameToAccept];
 				isCorrectGroupMember = nextGroupMember?.Name == groupMemberNameToAccept;
 				LogDebug($"Inside {nameof(GroupCommands)}.{nameof(TryAcceptInviteAsync)}(..) for {groupMemberNameToAccept}, isCorrectGroupMember: {isCorrectGroupMember}, acceptInviteCount: {acceptInviteCount}");
 			}

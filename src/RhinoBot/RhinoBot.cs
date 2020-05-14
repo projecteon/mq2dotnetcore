@@ -1,8 +1,5 @@
-﻿using JetBrains.Annotations;
-using MQ2DotNet.MQ2API;
-using MQ2DotNet.Program;
-using MQ2DotNet.Services;
-using MQ2DotNetCore;
+﻿using MQ2DotNetCore;
+using MQ2DotNetCore.Logging;
 using MQ2DotNetCore.MQ2Api;
 using Nito.AsyncEx;
 using RhinoBot.Base;
@@ -20,17 +17,20 @@ namespace RhinoBot
 {
 	public class RhinoBot : IMQ2Program
 	{
-		public readonly MQ2ChatWindow Mq2;
-		//public readonly Chat Chat;
-		public readonly Commands Commands;
-		//public readonly Events Events;
-		public readonly Spawns Spawns;
-		public readonly TLO Tlo;
+		private string _controlToonName = null!;
+		private MQ2Dependencies _mq2Dependencies = null!; // nullability hack, Initialize will always set this
 
-		public readonly string ControlToonName;
+		// Exposed mq2 dependencies directrly for convenience
+		public ChatUtilities Chat => _mq2Dependencies.GetChat();
+		public string ControlToonName => _controlToonName;
+		public MQ2SubmoduleEventRegistry EventRegistry => _mq2Dependencies.GetEventRegistry();
+		public MQ2 Mq2 => _mq2Dependencies.GetMQ2();
+		public MQ2Spawns Spawns => _mq2Dependencies.GetSpawns();
+		public MQ2Tlo Tlo => _mq2Dependencies.GetTlo();
 
+
+		// Bot singletons
 		public readonly ConfigLoader Configs;
-
 		public readonly GroupCommands GroupCommands;
 		public readonly LocationCommands LocationCommands;
 		public readonly MissionCommands MissionCommands;
@@ -38,55 +38,78 @@ namespace RhinoBot
 
 		public RhinoBot()
 		{
-			Mq2 = mq2;
-			//Chat = chat;
-			Commands = commands;
-			//Events = events;
-			Spawns = spawns;
-			Tlo = tlo;
-
-			ControlToonName = tlo.Me.Name;
-
-			Configs = new ConfigLoader(this, false);
-
-			GroupCommands = new GroupCommands(this, false);
+			Configs = new ConfigLoader(this, true);
+			GroupCommands = new GroupCommands(this, true);
 			LocationCommands = new LocationCommands(this, true);
 			MissionCommands = new MissionCommands(this, true);
 			ToonCommands = new ToonCommands(this, true);
 		}
 
-		public async Task Main(string[] args, CancellationToken cancellationToken)
+
+		private void Initialize(MQ2Dependencies mq2Dependencies)
 		{
-			Mq2.WriteChatSafe($"\ag[{nameof(RhinoBot)}]\aw {nameof(Main)}(..) is executing...");
+			_mq2Dependencies = mq2Dependencies ?? throw new ArgumentNullException(nameof(mq2Dependencies));
 
-			//Events.OnChatMQ2 += (s, e) =>
-			//{
-			//	if (e == "[MQ2] Hello")
-			//		Mq2.WriteChat("Hello yourself");
-			//};
-
-			Commands.AddAsyncCommand("/formgroup", async commandArgs => await GroupCommands.FormGroupAsync(commandArgs).ConfigureAwait(false));
-			Commands.AddAsyncCommand("/navto", async commandArgs => await LocationCommands.NavigateToLocationAsync(commandArgs).ConfigureAwait(false));
-			Commands.AddCommand("/reloadconfigs", Configs.ReloadAll);
-			Commands.AddAsyncCommand("/runmission", MissionCommands.RunMissionAsync);
-
-			while (cancellationToken != null && !cancellationToken.IsCancellationRequested)
+			var controlToonName = mq2Dependencies.GetTlo().Me?.Name;
+			if (string.IsNullOrWhiteSpace(controlToonName))
 			{
-				await Task.Delay(500, cancellationToken);
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly
+				throw new ArgumentNullException("cannot be null, empty, or whitespace.", "_mq2Dependencies.GetTlo().Me.Name");
+#pragma warning restore CA2208 // Instantiate argument exceptions correctly
 			}
 
-			Commands.RemoveCommand("/formgroup");
-			Commands.RemoveCommand("/navto");
-			Commands.RemoveCommand("/reloadconfigs");
-			Commands.RemoveCommand("/runmission");
+			_controlToonName = controlToonName;
+		}
 
-			Mq2.WriteChatSafe($"\ag[{nameof(RhinoBot)}]\aw {nameof(Main)}(..) is exiting.");
+		public async Task RunAsync(string[] commandArguments, MQ2Dependencies mq2Dependencies, CancellationToken cancellationToken)
+		{
+			try
+			{
+				Initialize(mq2Dependencies);
+
+				Mq2.WriteChatSafe($"\ag[{nameof(RhinoBot)}]\aw {nameof(RunAsync)}(..) is executing...");
+
+				//Events.OnChatMQ2 += (s, e) =>
+				//{
+				//	if (e == "[MQ2] Hello")
+				//		Mq2.WriteChat("Hello yourself");
+				//};
+
+				// All commands should be registered / unregistered here so we won't bother exposing the command registry outside of
+				// this method
+				var commandRegistry = _mq2Dependencies.GetCommandRegistry();
+				commandRegistry.AddAsyncCommand("/formgroup", GroupCommands.FormGroupAsync);
+				commandRegistry.AddAsyncCommand("/navto", LocationCommands.NavigateToLocationAsync);
+				commandRegistry.AddCommand("/reloadconfigs", Configs.ReloadAll);
+				commandRegistry.AddAsyncCommand("/runmission", MissionCommands.RunMissionAsync);
+
+				while (cancellationToken != null && !cancellationToken.IsCancellationRequested)
+				{
+					await Task.Delay(500, cancellationToken);
+				}
+
+				commandRegistry.TryRemoveCommand("/formgroup");
+				commandRegistry.TryRemoveCommand("/navto");
+				commandRegistry.TryRemoveCommand("/reloadconfigs");
+				commandRegistry.TryRemoveCommand("/runmission");
+
+				Mq2.WriteChatSafe($"\ag[{nameof(RhinoBot)}]\aw {nameof(RunAsync)}(..) is exiting.");
+			}
+			catch (Exception exc)
+			{
+				FileLoggingHelper.LogError(exc);
+			}
 		}
 
 		public static string GetConfigFilePath(string configFileName)
-			=> Path.Combine(Path.GetDirectoryName(RhinoBotConstants.AssemblyLocation), "Configs", configFileName);
+			=> Path.Combine(Path.GetDirectoryName(RhinoBotConstants.AssemblyLocation) ?? string.Empty, "Configs", configFileName);
 
-		public async Task<string> ParseVariablesOnRemoteToonAsync(string toonName, string variablePrefix, string variableValuesExpression)
+		public async Task<string?> ParseVariablesOnRemoteToonAsync(
+				string toonName,
+				string variablePrefix,
+				string variableValuesExpression,
+				CancellationToken cancellationToken
+			)
 		{
 			if (toonName == ControlToonName)
 			{
@@ -107,54 +130,44 @@ namespace RhinoBot
 
 				//var logFilePath = Path.Combine(Path.GetDirectoryName(RhinoBotConstants.AssemblyLocation), "debug.log");
 
-				TimeSpan timeout = TimeSpan.FromSeconds(3);
-
-				using (var timeoutCancellationTokenSource = new CancellationTokenSource(timeout))
+				Predicate<string> doesChatLineMatch = (chatLine =>
 				{
-					Predicate<string> doesChatLineMatch = (chatLine =>
+					if (wasFound)
 					{
-						if (wasFound)
-						{
-							timeoutCancellationTokenSource.Cancel();
-							return true;
-						}
-
-						var chatLinePrefix = $"/echo {variablePrefix}=";
-						var valueStartIndex = chatLine.IndexOf(chatLinePrefix);
-						if (valueStartIndex < 0)
-						{
-							//File.AppendAllText(logFilePath, $"Chat line not a match:\n\t{chatLine}\n\t{chatLinePrefix}\n\n");
-							return false;
-						}
-
-						valueStartIndex += chatLinePrefix.Length;
-						if (chatLine.Length > valueStartIndex)
-						{
-							variablesResult = chatLine.Substring(valueStartIndex);
-						}
-
-						//File.AppendAllText(logFilePath, $"Chat line prefix matched, values: {variablesResult}\n\n");
-						wasFound = true;
-						timeoutCancellationTokenSource.Cancel();
 						return true;
-					});
+					}
 
-					//var waitForOutputTask = Chat.WaitForMQ2(doesChatLineMatch, 2000);
-					var waitForOutputTask = Task.CompletedTask;
+					var chatLinePrefix = $"/echo {variablePrefix}=";
+					var valueStartIndex = chatLine.IndexOf(chatLinePrefix);
+					if (valueStartIndex < 0)
+					{
+						//File.AppendAllText(logFilePath, $"Chat line not a match:\n\t{chatLine}\n\t{chatLinePrefix}\n\n");
+						return false;
+					}
 
-					// no parse on our toon, tell the remote toon to echo the value(s) back to us and we'll parse it out of the chat line
-					var echoCommand = $"/noparse /bct {toonName} //bct {ControlToonName} /echo {variablePrefix}={variableValuesExpression}";
+					valueStartIndex += chatLinePrefix.Length;
+					if (chatLine.Length > valueStartIndex)
+					{
+						variablesResult = chatLine.Substring(valueStartIndex);
+					}
 
-					Mq2.DoCommand(echoCommand);
+					//File.AppendAllText(logFilePath, $"Chat line prefix matched, values: {variablesResult}\n\n");
+					wasFound = true;
+					return true;
+				});
+
+				var waitForChatTask = Chat.WaitForMQ2(doesChatLineMatch, 3000, cancellationToken);
+
+				// no parse on our toon, tell the remote toon to echo the value(s) back to us and we'll parse it out of the chat line
+				var echoCommand = $"/noparse /bct {toonName} //bct {ControlToonName} /echo {variablePrefix}={variableValuesExpression}";
+				Mq2.DoCommand(echoCommand);
 
 
-					await waitForOutputTask
-						.WaitAsync(timeoutCancellationTokenSource.Token)
-						.ConfigureAwait(false);
-				}
+				var wasFound2 = await waitForChatTask;
 			}
 			catch (Exception exc)
 			{
+				FileLoggingHelper.LogWarning($"Exception thrown:\n\n{exc}\n");
 				//Mq2.WriteChatSafe($"Exception: {StringHelper.EscapeForMQ2Chat(exc.ToString())}");
 			}
 

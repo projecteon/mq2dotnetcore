@@ -1,6 +1,7 @@
-﻿using MQ2DotNet.MQ2API.DataTypes;
+﻿using MQ2DotNetCore.MQ2Api.DataTypes;
 using RhinoBot.Base;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RhinoBot.LocationHelpers
@@ -17,7 +18,7 @@ namespace RhinoBot.LocationHelpers
 				? navigationCommand
 				: $"/bct {toonName} /{navigationCommand}");
 
-		public async Task<Coordinates> GetLocationCoordinatesAsync(LocationSettings location, string toonName)
+		public async Task<Coordinates?> GetLocationCoordinatesAsync(LocationSettings location, string toonName, CancellationToken cancellationToken)
 		{
 			if (location == null)
 			{
@@ -54,13 +55,12 @@ namespace RhinoBot.LocationHelpers
 					string? targetLocation;
 					if (toonName == Bot.ControlToonName)
 					{
-						targetLocation = Bot.Tlo.Target.MQLoc;
+						targetLocation = Bot.Tlo.Target?.MQLoc;
 					}
 					else
 					{
 						var remoteToonTargetId = await Bot.ToonCommands
-							.GetRemoteToonTargetIdAsync(toonName)
-							.ConfigureAwait(false);
+							.GetRemoteToonTargetIdAsync(toonName, cancellationToken);
 
 						var targetSpawn = Bot.Tlo.Spawn[remoteToonTargetId];
 						targetLocation = targetSpawn?.MQLoc;
@@ -77,7 +77,10 @@ namespace RhinoBot.LocationHelpers
 
 				case NavigationType.SpawnSearch:
 				{
-					var spawn = Bot.Tlo.Spawn[location.Value];
+					var spawn = string.IsNullOrEmpty(location.Value)
+						? null
+						: Bot.Tlo.Spawn[location.Value];
+
 					if (spawn == null)
 					{
 						var spawnId = Bot.Mq2.Parse($"${{Spawn[{location.Value}].ID}}");
@@ -114,17 +117,40 @@ namespace RhinoBot.LocationHelpers
 
 				case NavigationType.TargetOfGroupMemberName:
 				{
-					var groupMember = Bot.Tlo.Group.Member[location.Value];
-					if (groupMember?.Name != location.Value)
+					var groupMember = string.IsNullOrEmpty(location.Value)
+						? null
+						: Bot.Tlo.Group?.Member[location.Value];
+
+					if (groupMember == null
+						|| groupMember.Name == null
+						|| groupMember.Name != location.Value)
 					{
 						Bot.Mq2.WriteChatSafe($"{nameof(LocationCommands)}.{nameof(GetLocationCoordinatesAsync)}(..) was unable find the target group member with name: {location.Value}!");
 						return null;
 					}
 
-					var groupMemberTarget = groupMember.Spawn.TargetOfTarget;
-					if (groupMemberTarget == null)
+					var groupMemberTargetId = await Bot.ToonCommands
+						.GetRemoteToonTargetIdAsync(groupMember.Name, cancellationToken);
+
+					if (string.IsNullOrEmpty(groupMemberTargetId))
 					{
 						Bot.Mq2.WriteChatSafe($"{nameof(LocationCommands)}.{nameof(GetLocationCoordinatesAsync)}(..) group member with name: {location.Value} does not have a target to navigate to!");
+						return null;
+					}
+
+					var groupMemberTarget = Bot.Tlo.Spawn[groupMemberTargetId];
+					if (groupMemberTarget == null)
+					{
+						Bot.Mq2.WriteChatSafe($"{nameof(LocationCommands)}.{nameof(GetLocationCoordinatesAsync)}(..) failed to get the spawn object for the group member target id: {groupMemberTargetId}!");
+						return null;
+					}
+
+					var spawnIdMatches = int.TryParse(groupMemberTargetId, out int parsedTargetSpawnId)
+						&& parsedTargetSpawnId == groupMemberTarget.ID;
+
+					if (!spawnIdMatches)
+					{
+						Bot.Mq2.WriteChatSafe($"{nameof(LocationCommands)}.{nameof(GetLocationCoordinatesAsync)}(..) got a target spawn object but the spawn ID ({groupMemberTarget.ID}) did not match group member target id: {groupMemberTargetId}!");
 						return null;
 					}
 
@@ -150,7 +176,7 @@ namespace RhinoBot.LocationHelpers
 			}
 		}
 
-		public async Task<string> GetNavigationCommandAsync(LocationSettings location)
+		public async Task<string?> GetNavigationCommandAsync(LocationSettings location, CancellationToken cancellationToken)
 		{
 			if (location == null)
 			{
@@ -188,13 +214,12 @@ namespace RhinoBot.LocationHelpers
 
 					if (Bot.ControlToonName == location.Value)
 					{
-						targetId = Bot.Tlo.Target.ID;
+						targetId = Bot.Tlo.Target?.ID;
 					}
 					else
 					{
 						var remoteToonTargetId = await Bot.ToonCommands
-							.GetRemoteToonTargetIdAsync(location.Value)
-							.ConfigureAwait(false);
+							.GetRemoteToonTargetIdAsync(location.Value, cancellationToken);
 
 						if (int.TryParse(remoteToonTargetId, out var remoteToonTargetIdInteger))
 						{
@@ -215,11 +240,10 @@ namespace RhinoBot.LocationHelpers
 			}
 		}
 
-		public async Task<bool?> IsNavigatingAsync(string toonName)
+		public async Task<bool?> IsNavigatingAsync(string toonName, CancellationToken cancellationToken)
 		{
 			var isNavigatingValue = await Bot
-				.ParseVariablesOnRemoteToonAsync(toonName, "IsNavigating", "${Navigation.Active}")
-				.ConfigureAwait(false);
+				.ParseVariablesOnRemoteToonAsync(toonName, "IsNavigating", "${Navigation.Active}", cancellationToken);
 
 			var isNavigating = StringHelper.TryConvertToBoolean(isNavigatingValue);
 			if (isNavigating == null)
@@ -230,7 +254,7 @@ namespace RhinoBot.LocationHelpers
 			return isNavigating;
 		}
 
-		public bool? IsNearCoordinates(Coordinates coordinates, int distanceThreshold, GroupMemberType toon)
+		public bool? IsNearCoordinates(Coordinates? coordinates, int distanceThreshold, GroupMemberType toon)
 		{
 			if (coordinates == null || toon == null)
 			{
@@ -238,7 +262,8 @@ namespace RhinoBot.LocationHelpers
 				return null;
 			}
 
-			if (!Coordinates.TryParseYXZ(toon.LocYXZ, out var currentLocation))
+			if (!Coordinates.TryParseYXZ(toon.LocYXZ, out var currentLocation)
+				|| currentLocation == null)
 			{
 				LogDebug($"{nameof(LocationCommands)}.{nameof(IsNearCoordinates)} was unable to parse the toon's current location: {toon.LocYXZ}");
 				return null;
@@ -263,7 +288,12 @@ namespace RhinoBot.LocationHelpers
 			return isNearXYCoordinates;
 		}
 
-		public async Task NavigateToLocationAsync(bool cancelCurrentNavigation, LocationSettings location, string toonName)
+		public async Task NavigateToLocationAsync(
+			bool cancelCurrentNavigation,
+			LocationSettings location,
+			string toonName,
+			CancellationToken cancellationToken
+		)
 		{
 			if (location == null || string.IsNullOrWhiteSpace(toonName))
 			{
@@ -276,7 +306,7 @@ namespace RhinoBot.LocationHelpers
 
 			Bot.Mq2.WriteChatSafe($"Navigating {toonName} to {locationName}");
 
-			var targetToon = Bot.Tlo.Group.Member[toonName];
+			var targetToon = Bot.Tlo.Group?.Member[toonName];
 			if (targetToon?.Name != toonName)
 			{
 				Bot.Mq2.WriteChatSafe($"Unable to locate toon to navigate with name: {toonName}");
@@ -286,10 +316,10 @@ namespace RhinoBot.LocationHelpers
 			if (cancelCurrentNavigation)
 			{
 				DoNavigation("/nav stop", toonName);
-				await Task.Delay(200).ConfigureAwait(false);
+				await Task.Delay(200, cancellationToken);
 			}
 
-			var navigationCommand = await GetNavigationCommandAsync(location).ConfigureAwait(false);
+			var navigationCommand = await GetNavigationCommandAsync(location, cancellationToken);
 			if (navigationCommand == null)
 			{
 				LogDebug($"{nameof(LocationCommands)}.{nameof(NavigateToLocationAsync)}(..) received a null navigation command result!");
@@ -298,13 +328,13 @@ namespace RhinoBot.LocationHelpers
 
 			LogDebug($"Running navigation command: {navigationCommand}");
 			DoNavigation(navigationCommand, toonName);
-			await Task.Delay(200).ConfigureAwait(false);
+			await Task.Delay(200, cancellationToken);
 
-			var targetCoordinates = await GetLocationCoordinatesAsync(location, toonName).ConfigureAwait(false);
+			var targetCoordinates = await GetLocationCoordinatesAsync(location, toonName, cancellationToken);
 			if (targetCoordinates == null)
 			{
 				LogDebug($"Couldn't determine the target coordinates so we'll just assume the navigation command is going to work...");
-				await Task.Delay(500).ConfigureAwait(false);
+				await Task.Delay(500, cancellationToken);
 				return;
 			}
 
@@ -314,7 +344,7 @@ namespace RhinoBot.LocationHelpers
 			//Coordinates? previousCoordinates = null;
 			while (IsNearCoordinates(targetCoordinates, location.DistanceThreshold ?? 10, targetToon) == false)
 			{
-				var isNavigating = await IsNavigatingAsync(toonName).ConfigureAwait(false);
+				var isNavigating = await IsNavigatingAsync(toonName, cancellationToken);
 				if (isNavigating == null)
 				{
 					LogDebug("Unable to determine if the toon is currently navigating, cancelling!");
@@ -325,25 +355,25 @@ namespace RhinoBot.LocationHelpers
 				{
 					LogDebug($"IsNavigating is false, executing the navigation command ({navigationCommand})...");
 					DoNavigation(navigationCommand, toonName);
-					await Task.Delay(200).ConfigureAwait(false);
+					await Task.Delay(200, cancellationToken);
 				}
 				else
 				{
 					LogDebug($"IsNavigating is true...");
 				}
 
-				await Task.Delay(500).ConfigureAwait(false);
+				await Task.Delay(500, cancellationToken);
 
 				if (updateTargetCoordinatesForMovingTarget)
 				{
-					targetCoordinates = await GetLocationCoordinatesAsync(location, toonName).ConfigureAwait(false);
+					targetCoordinates = await GetLocationCoordinatesAsync(location, toonName, cancellationToken);
 				}
 			}
 
 			LogDebug($"Toon is near location, returning from the {nameof(NavigateToLocationAsync)} method...");
 		}
 
-		public async Task NavigateToLocationAsync(string[] commandArguments)
+		public async Task NavigateToLocationAsync(string[] commandArguments, CancellationToken cancellationToken)
 		{
 			if (commandArguments.Length < 1)
 			{
@@ -385,7 +415,7 @@ namespace RhinoBot.LocationHelpers
 				cancelCurrentNavigation = StringHelper.ParseBoolean(commandArguments[2], true);
 			}
 
-			await NavigateToLocationAsync(cancelCurrentNavigation, location, remoteToonName);
+			await NavigateToLocationAsync(cancelCurrentNavigation, location, remoteToonName, cancellationToken);
 		}
 
 	}

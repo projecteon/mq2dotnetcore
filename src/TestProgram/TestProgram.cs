@@ -18,7 +18,7 @@ namespace TestProgram
 					throw new ArgumentNullException(nameof(mq2Dependencies));
 				}
 
-				mq2Dependencies.CommandRegistry.AddAsyncCommand("/testcommandasync", TestCommandAsync);
+				mq2Dependencies.GetCommandRegistry().AddAsyncCommand("/testcommandasync", TestCommandAsync);
 
 				while (cancellationToken != null && !cancellationToken.IsCancellationRequested)
 				{
@@ -39,7 +39,7 @@ namespace TestProgram
 			catch (Exception exc)
 			{
 				FileLoggingHelper.LogError(exc);
-				mq2Dependencies?.MQ2ChatWindow.WriteChatSafe($"{nameof(TestProgram)}.{nameof(RunAsync)} threw an exception: {exc}");
+				mq2Dependencies?.GetMQ2().WriteChatSafe($"{nameof(TestProgram)}.{nameof(RunAsync)} threw an exception: {exc}");
 			}
 		}
 

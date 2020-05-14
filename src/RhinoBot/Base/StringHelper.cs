@@ -1,4 +1,4 @@
-namespace RhinoBot.Base
+﻿namespace RhinoBot.Base
 {
 	public static class StringHelper
 	{
@@ -18,7 +18,7 @@ namespace RhinoBot.Base
 			return convertedValue ?? defaultValue;
 		}
 
-		public static bool? TryConvertToBoolean(string value)
+		public static bool? TryConvertToBoolean(string? value)
 		{
 			if (value?.Equals("true", System.StringComparison.OrdinalIgnoreCase) == true)
 			{

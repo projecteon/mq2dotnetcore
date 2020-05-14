@@ -1,5 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RhinoBot.ToonHelpers
@@ -11,7 +12,7 @@ namespace RhinoBot.ToonHelpers
 		{
 		}
 
-		public async Task ExecuteActionAsync(ToonAction toonAction)
+		public async Task ExecuteActionAsync(ToonAction? toonAction, CancellationToken cancellationToken)
 		{
 			if (toonAction == null)
 			{
@@ -26,10 +27,10 @@ namespace RhinoBot.ToonHelpers
 
 			if (toonAction.DelayBeforeExecuting > 0)
 			{
-				await Task.Delay(toonAction.DelayBeforeExecuting).ConfigureAwait(false);
+				await Task.Delay(toonAction.DelayBeforeExecuting, cancellationToken);
 			}
 
-			var targetToonNames = await GetToonNamesForActionAsync(toonAction).ConfigureAwait(false);
+			var targetToonNames = await GetToonNamesForActionAsync(toonAction, cancellationToken);
 			if (targetToonNames?.Any() != true)
 			{
 				LogDebug($"{nameof(ToonCommands)}.{nameof(ExecuteActionAsync)}(..) did not find any toon names to execute the action for!");
@@ -82,22 +83,21 @@ namespace RhinoBot.ToonHelpers
 
 			if (toonAction.DelayAfterExecuting > 0)
 			{
-				await Task.Delay(toonAction.DelayAfterExecuting).ConfigureAwait(false);
+				await Task.Delay(toonAction.DelayAfterExecuting, cancellationToken);
 			}
 		}
 
-		public async Task<string> GetRemoteToonTargetIdAsync(string remoteToonName)
+		public async Task<string> GetRemoteToonTargetIdAsync(string remoteToonName, CancellationToken cancellationToken)
 		{
 			var targetId = await Bot
-				.ParseVariablesOnRemoteToonAsync(remoteToonName, "MyTargetId", "${Target.ID}")
-				.ConfigureAwait(false);
+				.ParseVariablesOnRemoteToonAsync(remoteToonName, "MyTargetId", "${Target.ID}", cancellationToken);
 
-			return targetId == "NULL"
+			return targetId == null || targetId == "NULL"
 				? string.Empty
 				: targetId;
 		}
 
-		public async Task<IReadOnlyCollection<string>> GetToonNamesForActionAsync(ToonAction toonAction)
+		public async Task<IReadOnlyCollection<string>?> GetToonNamesForActionAsync(ToonAction toonAction, CancellationToken cancellationToken)
 		{
 			if (toonAction == null)
 			{
@@ -130,11 +130,13 @@ namespace RhinoBot.ToonHelpers
 						return null;
 					}
 
-					var groupMemberName = Bot.Tlo.Group.Member[groupMemberIndex].Name;
-					return new List<string>() { groupMemberName };
+					var groupMemberName = Bot.Tlo.Group?.Member[groupMemberIndex]?.Name;
+					return groupMemberName == null
+						? null
+						: new List<string>() { groupMemberName };
 
 				case ToonIdentifierType.GroupName:
-					await Task.Delay(100).ConfigureAwait(false);
+					await Task.Delay(100, cancellationToken);
 
 					// TODO: Implement logic to get group type info for groups in a raid / remote groups?
 					LogDebug($"{nameof(ToonCommands)}.{nameof(GetToonNamesForActionAsync)}(..) is not yet implemented for the {nameof(ToonIdentifierType)} value of {nameof(ToonIdentifierType.GroupName)}!");

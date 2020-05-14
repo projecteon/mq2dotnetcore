@@ -7,11 +7,11 @@ namespace MQ2DotNetCore.MQ2Api
 	/// <summary>
 	/// Contains methods and properties relating to MQ2 functionality
 	/// </summary>
-	public sealed class MQ2ChatWindow
+	public sealed class MQ2
 	{
-		internal static readonly MQ2ChatWindow Instance = new MQ2ChatWindow();
+		internal static readonly MQ2 Instance = new MQ2();
 
-		private MQ2ChatWindow() { }
+		private MQ2() { }
 
 		/// <summary>
 		/// Uses MQ2's parser to evaluate a formula

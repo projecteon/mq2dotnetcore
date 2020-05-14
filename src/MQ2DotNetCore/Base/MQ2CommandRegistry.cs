@@ -146,8 +146,8 @@ namespace MQ2DotNetCore.Base
 							FileLoggingHelper.LogError($"{nameof(MQ2SynchronizationContext.SetExecuteAndRestore)}(..) encountered an exception:\n\n{innerException}\n");
 
 							// This won't catch exceptions from the command handler, since that will get called from MQ2SynchronizationContext.DoEvents
-							MQ2ChatWindow.WriteChatGeneralError($"Exception in {commandName}:");
-							MQ2ChatWindow.WriteChatGeneralError(innerException.ToString());
+							MQ2.WriteChatGeneralError($"Exception in {commandName}:");
+							MQ2.WriteChatGeneralError(innerException.ToString());
 						}
 					});
 
@@ -155,7 +155,7 @@ namespace MQ2DotNetCore.Base
 				catch (Exception exc)
 				{
 					FileLoggingHelper.LogError($"Exception in (async) {commandName}:\n\n{exc}\n");
-					MQ2ChatWindow.WriteChatGeneralError($"Exception in (async) {commandName}: {exc}");
+					MQ2.WriteChatGeneralError($"Exception in (async) {commandName}: {exc}");
 				}
 			});
 		}
@@ -230,7 +230,7 @@ namespace MQ2DotNetCore.Base
 						{
 							var message = $"Command ({commandName}) is currently in progress. Only one instance of a sync command may execute at a time. [In Progress Command Started At: {commandStartTime}]";
 							FileLoggingHelper.LogWarning(message);
-							MQ2ChatWindow.WriteChatGeneralError(message);
+							MQ2.WriteChatGeneralError(message);
 							return;
 						}
 
@@ -238,7 +238,7 @@ namespace MQ2DotNetCore.Base
 						{
 							var message = $"Unable to add command ({commandName}) start time to the dictionary. Only one instance of a sync command may execute at a time.";
 							FileLoggingHelper.LogWarning(message);
-							MQ2ChatWindow.WriteChatGeneralError(message);
+							MQ2.WriteChatGeneralError(message);
 							return;
 						}
 
@@ -264,7 +264,7 @@ namespace MQ2DotNetCore.Base
 				catch (Exception exc)
 				{
 					FileLoggingHelper.LogError($"Exception in {commandName}:\n\n{exc}\n");
-					MQ2ChatWindow.WriteChatGeneralError($"Exception in {commandName}: {exc}");
+					MQ2.WriteChatGeneralError($"Exception in {commandName}: {exc}");
 				}
 			});
 		}
@@ -531,13 +531,13 @@ namespace MQ2DotNetCore.Base
 					if (!_synchronousCommandInProgressDictionary.TryGetValue(commandName, out var commandStartTime))
 					{
 						FileLoggingHelper.LogWarning($"Failed to get synchronous command start time from the dictionary: {commandName}");
-						MQ2ChatWindow.Instance.WriteChatSafe($"  Synchronous command {commandName} is running.");
+						MQ2.Instance.WriteChatSafe($"  Synchronous command {commandName} is running.");
 						continue;
 					}
 
 					var ellapsedMilliseconds = (DateTime.Now - commandStartTime).TotalMilliseconds;
 					FileLoggingHelper.LogDebug($"Synchronous command {commandName} is running. [StartTime: {commandStartTime}] [Ellapsed: {ellapsedMilliseconds} ms ]");
-					MQ2ChatWindow.Instance.WriteChatSafe($"  Synchronous command {commandName} is running. [StartTime: {commandStartTime}] [Ellapsed: {ellapsedMilliseconds} ms ]");
+					MQ2.Instance.WriteChatSafe($"  Synchronous command {commandName} is running. [StartTime: {commandStartTime}] [Ellapsed: {ellapsedMilliseconds} ms ]");
 				}
 				catch (Exception exc)
 				{
@@ -573,7 +573,7 @@ namespace MQ2DotNetCore.Base
 						var ellapsedMilliseconds = (DateTime.Now - asyncCommandTaskWrapper.StartTime).TotalMilliseconds;
 						var message = $"Async command {commandNameWithIndex} task is in progress. [StartTime: {asyncCommandTaskWrapper.StartTime}] [Ellapsed: {ellapsedMilliseconds} ms ] [TaskStatus: {asyncCommandTaskWrapper.Task.Status}]";
 						FileLoggingHelper.LogDebug(message);
-						MQ2ChatWindow.Instance.WriteChatSafe(message);
+						MQ2.Instance.WriteChatSafe(message);
 					}
 				}
 				catch (Exception exc)
@@ -680,6 +680,13 @@ namespace MQ2DotNetCore.Base
 
 		internal int RemoveCommandsForSubmodule(string submoduleName)
 		{
+			if (_submoduleCancellationTokenSourceDictionary.TryRemove(submoduleName, out var submoduleCancellationTokenSource))
+			{
+				FileLoggingHelper.LogInformation($"Cancelling all submodule async command tasks for: {submoduleName}");
+				CleanupHelper.TryCancel(submoduleCancellationTokenSource);
+				CleanupHelper.TryDispose(submoduleCancellationTokenSource);
+			}
+
 			if (!_submoduleCommandsDictionary.TryRemove(submoduleName, out var submoduleCommandsList)
 				|| submoduleCommandsList == null)
 			{
