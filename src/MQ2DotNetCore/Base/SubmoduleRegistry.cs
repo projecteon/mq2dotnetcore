@@ -46,6 +46,39 @@ namespace MQ2DotNetCore.Base
 			_isDisposed = true;
 		}
 
+		internal void ExecuteForEachSubmodule(Action<SubmoduleProgramWrapper> actionToInvoke)
+		{
+			if (_isDisposed)
+			{
+				throw new ObjectDisposedException(nameof(SubmoduleRegistry));
+			}
+
+			if (actionToInvoke == null)
+			{
+				throw new ArgumentNullException(nameof(actionToInvoke));
+			}
+
+			var submoduleNames = _programsDictionary.Keys.ToArray();
+			foreach (var submoduleName in submoduleNames)
+			{
+				try
+				{
+					if (!_programsDictionary.TryGetValue(submoduleName, out var submoduleWrapper)
+						|| submoduleName == null)
+					{
+						FileLoggingHelper.LogWarning($"Unable to retrieve the submodule wrapper for: {submoduleName}");
+						continue;
+					}
+
+					actionToInvoke.Invoke(submoduleWrapper);
+				}
+				catch (Exception exc)
+				{
+					FileLoggingHelper.LogError(exc);
+				}
+			}
+		}
+
 		internal void PrintRunningPrograms()
 		{
 			if (_isDisposed)
@@ -400,82 +433,6 @@ namespace MQ2DotNetCore.Base
 			}
 
 			_programsDictionary.Clear();
-		}
-
-		private class SubmoduleProgramWrapper : IDisposable
-		{
-			private bool _isDisposed = false;
-
-			public SubmoduleProgramWrapper(
-				AssemblyLoadContext assemblyLoadContext,
-				CancellationTokenSource cancellationTokenSource,
-				MQ2Dependencies mq2Dependencies,
-				string name,
-				IMQ2Program programInstance,
-				DateTime startTime,
-				Task task
-			)
-			{
-				AssemblyLoadContext = assemblyLoadContext;
-				CancellationTokenSource = cancellationTokenSource;
-				MQ2Dependencies = mq2Dependencies;
-				Name = name;
-				ProgramInstance = programInstance;
-				StartTime = startTime;
-				Task = task;
-			}
-
-			public AssemblyLoadContext? AssemblyLoadContext { get; private set; }
-			public CancellationTokenSource? CancellationTokenSource { get; private set; }
-			public bool HasCancelled { get; private set; }
-			public MQ2Dependencies MQ2Dependencies { get; private set; }
-			public string Name { get; private set; }
-			public IMQ2Program? ProgramInstance { get; private set; }
-			public DateTime StartTime { get; private set; }
-			public Task? Task { get; private set; }
-
-			/// <inheritdoc />
-			public void Dispose()
-			{
-				if (_isDisposed)
-				{
-					return;
-				}
-
-				CleanupHelper.TryCancel(CancellationTokenSource);
-				CleanupHelper.TryDispose(CancellationTokenSource);
-				CleanupHelper.TryDispose(Task);
-
-				if (ProgramInstance is IDisposable disposableProgramInstance)
-				{
-					CleanupHelper.TryDispose(disposableProgramInstance);
-				}
-
-				CleanupHelper.TryDispose(MQ2Dependencies);
-
-				CleanupHelper.TryUnload(AssemblyLoadContext);
-				AssemblyLoadContext = null;
-
-				_isDisposed = true;
-			}
-
-			public async Task<TaskStatus> TryCancelAsync()
-			{
-				CleanupHelper.TryCancel(CancellationTokenSource);
-				await Task.Delay(500);
-
-				FileLoggingHelper.LogDebug($"Task status after first delay is {Task?.Status.ToString() ?? "(null)"}");
-
-				if (!CleanupHelper.IsTaskStopped(Task))
-				{
-					await Task.Delay(1000);
-					FileLoggingHelper.LogDebug($"Task status after second delay is {Task?.Status.ToString() ?? "(null)"}");
-				}
-
-				HasCancelled = true;
-
-				return Task?.Status ?? TaskStatus.RanToCompletion;
-			}
 		}
 	}
 }

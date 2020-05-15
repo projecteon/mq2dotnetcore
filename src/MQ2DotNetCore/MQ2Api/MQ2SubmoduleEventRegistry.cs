@@ -22,108 +22,6 @@ namespace MQ2DotNetCore.MQ2Api
 			_isDisposed = true;
 		}
 
-		private event EventHandler<string>? _onChatEQ;
-
-		/// <summary>
-		/// Fired on a line of chat from EQ
-		/// </summary>
-		public event EventHandler<string>? OnChatEQ
-		{
-			add
-			{
-				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
-				_onChatEQ += value;
-			}
-			remove
-			{
-				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
-
-				_onChatEQ -= value;
-			}
-		}
-
-
-		private event EventHandler<string>? _onChatMQ2;
-
-		/// <summary>
-		/// Fired on a line of chat from MQ2
-		/// </summary>
-		public event EventHandler<string>? OnChatMQ2
-		{
-			add
-			{
-				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
-				_onChatMQ2 += value;
-			}
-			remove
-			{
-				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
-				_onChatMQ2 -= value;
-			}
-		}
-
-
-
-		private event EventHandler<string>? _onChatAny;
-
-		/// <summary>
-		/// Fired from a line of chat from either EQ or MQ2
-		/// </summary>
-		public event EventHandler<string>? OnChatAny
-		{
-			add
-			{
-				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
-				_onChatAny += value;
-			}
-			remove
-			{
-				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
-				_onChatAny -= value;
-			}
-		}
-
-
-
-		private event EventHandler? _onBeginZone;
-
-		/// <summary>
-		/// This is called when we receive the EQ_BEGIN_ZONE packet
-		/// </summary>
-		public event EventHandler? OnBeginZone
-		{
-			add
-			{
-				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
-				_onBeginZone += value;
-			}
-			remove
-			{
-				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
-				_onBeginZone -= value;
-			}
-		}
-
-
-		private event EventHandler? _onEndZone;
-
-		/// <summary>
-		/// This is called when we receive the EQ_END_ZONE packet
-		/// </summary>
-		public event EventHandler? OnEndZone
-		{
-			add
-			{
-				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
-				_onEndZone += value;
-			}
-			remove
-			{
-				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
-				_onEndZone -= value;
-			}
-		}
-
 
 		private event EventHandler<GroundType>? _onAddGroundItem;
 
@@ -141,26 +39,6 @@ namespace MQ2DotNetCore.MQ2Api
 			{
 				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
 				_onAddGroundItem -= value;
-			}
-		}
-
-
-		private event EventHandler<GroundType>? _onRemoveGroundItem;
-
-		/// <summary>
-		/// Fired when a ground item is removed. Will be fired once for each ground item in the zone when exiting a zone
-		/// </summary>
-		public event EventHandler<GroundType>? OnRemoveGroundItem
-		{
-			add
-			{
-				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
-				_onRemoveGroundItem += value;
-			}
-			remove
-			{
-				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
-				_onRemoveGroundItem -= value;
 			}
 		}
 
@@ -187,22 +65,85 @@ namespace MQ2DotNetCore.MQ2Api
 
 
 
-		private event EventHandler<SpawnType>? _onRemoveSpawn;
+		private event EventHandler? _onBeginZone;
 
 		/// <summary>
-		/// Fired when a spawn is removed. Will be fired once for each spawn in the zone when exiting a zone
+		/// This is called when we receive the EQ_BEGIN_ZONE packet
 		/// </summary>
-		public event EventHandler<SpawnType>? OnRemoveSpawn
+		public event EventHandler? OnBeginZone
 		{
 			add
 			{
 				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
-				_onRemoveSpawn += value;
+				_onBeginZone += value;
 			}
 			remove
 			{
 				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
-				_onRemoveSpawn -= value;
+				_onBeginZone -= value;
+			}
+		}
+
+
+
+		private event EventHandler<ChatLineEventArgs>? _onChatAny;
+
+		/// <summary>
+		/// Fired from a line of chat from either EQ or MQ2
+		/// </summary>
+		public event EventHandler<ChatLineEventArgs>? OnChatAny
+		{
+			add
+			{
+				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
+				_onChatAny += value;
+			}
+			remove
+			{
+				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
+				_onChatAny -= value;
+			}
+		}
+
+
+
+		private event EventHandler<ChatLineEventArgs>? _onChatEQ;
+
+		/// <summary>
+		/// Fired on a line of chat from EQ
+		/// </summary>
+		public event EventHandler<ChatLineEventArgs>? OnChatEQ
+		{
+			add
+			{
+				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
+				_onChatEQ += value;
+			}
+			remove
+			{
+				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
+
+				_onChatEQ -= value;
+			}
+		}
+
+
+		private event EventHandler<ChatLineEventArgs>? _onChatMQ2;
+
+		/// <summary>
+		/// Fired on a line of chat from MQ2
+		/// </summary>
+		public event EventHandler<ChatLineEventArgs>? OnChatMQ2
+		{
+			add
+			{
+				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
+				_onChatMQ2 += value;
+			}
+			remove
+			{
+				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
+				_onChatMQ2 -= value;
 			}
 		}
 
@@ -249,6 +190,26 @@ namespace MQ2DotNetCore.MQ2Api
 		}
 
 
+		private event EventHandler? _onEndZone;
+
+		/// <summary>
+		/// This is called when we receive the EQ_END_ZONE packet
+		/// </summary>
+		public event EventHandler? OnEndZone
+		{
+			add
+			{
+				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
+				_onEndZone += value;
+			}
+			remove
+			{
+				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
+				_onEndZone -= value;
+			}
+		}
+
+
 
 		private event EventHandler? _onReloadUI;
 
@@ -266,6 +227,68 @@ namespace MQ2DotNetCore.MQ2Api
 			{
 				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
 				_onReloadUI -= value;
+			}
+		}
+
+
+		private event EventHandler<GroundType>? _onRemoveGroundItem;
+
+		/// <summary>
+		/// Fired when a ground item is removed. Will be fired once for each ground item in the zone when exiting a zone
+		/// </summary>
+		public event EventHandler<GroundType>? OnRemoveGroundItem
+		{
+			add
+			{
+				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
+				_onRemoveGroundItem += value;
+			}
+			remove
+			{
+				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
+				_onRemoveGroundItem -= value;
+			}
+		}
+
+
+
+		private event EventHandler<SpawnType>? _onRemoveSpawn;
+
+		/// <summary>
+		/// Fired when a spawn is removed. Will be fired once for each spawn in the zone when exiting a zone
+		/// </summary>
+		public event EventHandler<SpawnType>? OnRemoveSpawn
+		{
+			add
+			{
+				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
+				_onRemoveSpawn += value;
+			}
+			remove
+			{
+				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
+				_onRemoveSpawn -= value;
+			}
+		}
+
+
+
+		private event EventHandler<GameState>? _onSetGameState;
+
+		/// <summary>
+		/// Called once directly after initialization, and then every time the gamestate changes
+		/// </summary>
+		public event EventHandler<GameState>? OnSetGameState
+		{
+			add
+			{
+				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
+				_onSetGameState += value;
+			}
+			remove
+			{
+				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
+				_onSetGameState -= value;
 			}
 		}
 
@@ -292,134 +315,116 @@ namespace MQ2DotNetCore.MQ2Api
 
 
 
-		private event EventHandler<GameState>? _onSetGameState;
-
-		/// <summary>
-		/// Called once directly after initialization, and then every time the gamestate changes
-		/// </summary>
-		public event EventHandler<GameState>? OnSetGameState
-		{
-			add
-			{
-				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
-				_onSetGameState += value;
-			}
-			remove
-			{
-				CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2SubmoduleEventRegistry));
-				_onSetGameState -= value;
-			}
-		}
-
-		internal void NotifyBeginZone(object sender, EventArgs e)
+		// Convenience methods called from the loader entry point to signal the events to submodules
+		internal void NotifyAddGroundItem(GroundType groundItem)
 		{
 			if (!_isDisposed)
 			{
-				_onBeginZone?.Invoke(this, e);
+				_onAddGroundItem?.Invoke(this, groundItem);
 			}
 		}
 
-		private void NotifyEndZone(object sender, EventArgs e)
+		internal void NotifyAddSpawn(SpawnType newSpawn)
 		{
 			if (!_isDisposed)
 			{
-				_onEndZone?.Invoke(this, e);
+				_onAddSpawn?.Invoke(this, newSpawn);
 			}
 		}
 
-		private void NotifyOnAddGroundItem(object sender, GroundType e)
+		internal void NotifyBeginZone(EventArgs eventArgs)
 		{
 			if (!_isDisposed)
 			{
-				_onAddGroundItem?.Invoke(this, e);
+				_onBeginZone?.Invoke(this, eventArgs);
 			}
 		}
 
-		private void NotifyOnAddSpawn(object sender, SpawnType e)
+		internal void NotifyChatAny(ChatLineEventArgs chatLineEventArgs)
 		{
 			if (!_isDisposed)
 			{
-				_onAddSpawn?.Invoke(this, e);
+				_onChatAny?.Invoke(this, chatLineEventArgs);
 			}
 		}
 
-		private void NotifyOnChat(object sender, string e)
+		internal void NotifyChatEQ(ChatLineEventArgs chatLineEventArgs)
 		{
 			if (!_isDisposed)
 			{
-				_onChatAny?.Invoke(this, e);
+				_onChatEQ?.Invoke(this, chatLineEventArgs);
 			}
 		}
 
-		private void NotifyOnChatEQ(object sender, string e)
+		internal void NotifyChatMQ2(ChatLineEventArgs chatLineEventArgs)
 		{
 			if (!_isDisposed)
 			{
-				_onChatEQ?.Invoke(this, e);
+				_onChatMQ2?.Invoke(this, chatLineEventArgs);
 			}
 		}
 
-		private void NotifyOnChatMQ2(object sender, string e)
+		internal void NotifyCleanUI(EventArgs eventArgs)
 		{
 			if (!_isDisposed)
 			{
-				_onChatMQ2?.Invoke(this, e);
+				_onCleanUI?.Invoke(this, eventArgs);
 			}
 		}
 
-		private void NotifyOnCleanUI(object sender, EventArgs e)
+		internal void NotifyDrawHUD(EventArgs eventArgs)
 		{
 			if (!_isDisposed)
 			{
-				_onCleanUI?.Invoke(this, e);
+				_onDrawHUD?.Invoke(this, eventArgs);
 			}
 		}
 
-		private void NotifyOnDrawHUD(object sender, EventArgs e)
+		internal void NotifyEndZone(EventArgs eventArgs)
 		{
 			if (!_isDisposed)
 			{
-				_onDrawHUD?.Invoke(this, e);
+				_onEndZone?.Invoke(this, eventArgs);
 			}
 		}
 
-		private void NotifyOnReloadUI(object sender, EventArgs e)
+		internal void NotifyReloadUI(EventArgs eventArgs)
 		{
 			if (!_isDisposed)
 			{
-				_onReloadUI?.Invoke(this, e);
+				_onReloadUI?.Invoke(this, eventArgs);
 			}
 		}
 
-		private void NotifyOnRemoveGroundItem(object sender, GroundType e)
+		internal void NotifyRemoveGroundItem(GroundType removedGroundItem)
 		{
 			if (!_isDisposed)
 			{
-				_onRemoveGroundItem?.Invoke(this, e);
+				_onRemoveGroundItem?.Invoke(this, removedGroundItem);
 			}
 		}
 
-		private void NotifyOnRemoveSpawn(object sender, SpawnType e)
+		internal void NotifyRemoveSpawn(SpawnType removedSpawn)
 		{
 			if (!_isDisposed)
 			{
-				_onRemoveSpawn?.Invoke(this, e);
+				_onRemoveSpawn?.Invoke(this, removedSpawn);
 			}
 		}
 
-		private void NotifyOnZoned(object sender, EventArgs e)
+		internal void NotifySetGameState(GameState gameState)
 		{
 			if (!_isDisposed)
 			{
-				_onZoned?.Invoke(this, e);
+				_onSetGameState?.Invoke(this, gameState);
 			}
 		}
 
-		private void NotifySetGameState(object sender, GameState e)
+		internal void NotifyZoned(EventArgs eventArgs)
 		{
 			if (!_isDisposed)
 			{
-				_onSetGameState?.Invoke(this, e);
+				_onZoned?.Invoke(this, eventArgs);
 			}
 		}
 	}

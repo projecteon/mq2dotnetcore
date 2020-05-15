@@ -122,15 +122,15 @@ namespace MQ2DotNetCore.MQ2Api
 
 		private async Task WaitForInternal(
 			Predicate<string> predicate,
-			Action<EventHandler<string>> subscribe,
-			Action<EventHandler<string>> unsubscribe,
+			Action<EventHandler<ChatLineEventArgs>> subscribe,
+			Action<EventHandler<ChatLineEventArgs>> unsubscribe,
 			CancellationToken cancellationToken
 		)
 		{
 			// Since all the WaitFor* methods are the same, just using a different event, this reduces the need for a lot of boilerplate code
 			var found = false;
-			void OnChat(object? _, string line) {
-				if (predicate(line))
+			void OnChat(object? _, ChatLineEventArgs chatLineEventArgs) {
+				if (predicate(chatLineEventArgs.ChatLine))
 				{
 					found = true;
 				}
@@ -154,8 +154,8 @@ namespace MQ2DotNetCore.MQ2Api
 		private async Task<bool> WaitForInternalWithTimeout(
 			Predicate<string> predicate,
 			int timeoutInMilliseconds,
-			Action<EventHandler<string>> subscribe,
-			Action<EventHandler<string>> unsubscribe,
+			Action<EventHandler<ChatLineEventArgs>> subscribe,
+			Action<EventHandler<ChatLineEventArgs>> unsubscribe,
 			CancellationToken cancellationToken
 		)
 		{
