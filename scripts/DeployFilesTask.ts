@@ -131,18 +131,21 @@ class DeployFilesTask {
 
 			if (this.isSkipUnmodifiedEnabled) {
 				try {
-					const destinationFileStats = FileSystemTools.statSync(absoluteDestinationPath);
+					if (FileSystemTools.existsSync(absoluteDestinationPath)) {
 
-					const isUnmodified = destinationFileStats
-						&& destinationFileStats.size === sourceItem.stats.size
-						&& destinationFileStats.mtimeMs === sourceItem.stats.mtimeMs
+						const destinationFileStats = FileSystemTools.statSync(absoluteDestinationPath);
 
-					if (isUnmodified) {
-						return {
-							DestinationPath: absoluteDestinationPath,
-							SourcePath: sourceFilePath,
-							Status: FileCopyStatus.SkippedUnmodified
-						};
+						const isUnmodified = destinationFileStats
+							&& destinationFileStats.size === sourceItem.stats.size
+							&& destinationFileStats.mtimeMs === sourceItem.stats.mtimeMs
+
+						if (isUnmodified) {
+							return {
+								DestinationPath: absoluteDestinationPath,
+								SourcePath: sourceFilePath,
+								Status: FileCopyStatus.SkippedUnmodified
+							};
+						}
 					}
 				} catch (getStatsError) {
 					console.debug(getFormattedErrorMessage(getStatsError));

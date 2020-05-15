@@ -366,16 +366,18 @@ var DeployFilesTask = /** @class */ (function () {
                         absoluteDestinationPath = PathTools.resolve(destinationDirectory, relativeSourcePath);
                         if (this.isSkipUnmodifiedEnabled) {
                             try {
-                                destinationFileStats = FileSystemTools.statSync(absoluteDestinationPath);
-                                isUnmodified = destinationFileStats
-                                    && destinationFileStats.size === sourceItem.stats.size
-                                    && destinationFileStats.mtimeMs === sourceItem.stats.mtimeMs;
-                                if (isUnmodified) {
-                                    return [2 /*return*/, {
-                                            DestinationPath: absoluteDestinationPath,
-                                            SourcePath: sourceFilePath,
-                                            Status: FileCopyStatus.SkippedUnmodified
-                                        }];
+                                if (FileSystemTools.existsSync(absoluteDestinationPath)) {
+                                    destinationFileStats = FileSystemTools.statSync(absoluteDestinationPath);
+                                    isUnmodified = destinationFileStats
+                                        && destinationFileStats.size === sourceItem.stats.size
+                                        && destinationFileStats.mtimeMs === sourceItem.stats.mtimeMs;
+                                    if (isUnmodified) {
+                                        return [2 /*return*/, {
+                                                DestinationPath: absoluteDestinationPath,
+                                                SourcePath: sourceFilePath,
+                                                Status: FileCopyStatus.SkippedUnmodified
+                                            }];
+                                    }
                                 }
                             }
                             catch (getStatsError) {

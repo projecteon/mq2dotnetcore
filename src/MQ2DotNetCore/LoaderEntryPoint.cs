@@ -78,6 +78,21 @@ namespace MQ2DotNetCore
 
 				_mq2CommandRegistry.AddCommand(nameof(LoaderEntryPoint), "/netcorecanceltask", NetCancelCommandTask);
 
+
+				// TODO: Support csx script file compilation and execution like what MQ2DotNet has
+				// The compilation is pretty straight forward, just need to use the Roslyn scripting
+				// package Microsoft.CodeAnalysis.CSharp.Scripting. Not sure if it is possible to
+				// use a separate collectible AssemblyLoadContext for each script execution though...
+				// The scripting Create(..) methods accept an InteractiveAssemblyLoader parameter
+				// but the documentation on how what the loader is or how to use it is pretty
+				// sparse.
+
+
+				// TODO: Support plugins the way MQ2DotNet did? I can't see a clear use case for it at this point.
+				// Any program that runs using /netcorerun can subscribe to the plugin method events other than
+				// OnPulse, and the async continuations run during OnPulse anyway so an event handler for that isn't
+				// really necessary...
+
 				FileLoggingHelper.LogDebug("Done registering the primary commands.");
 
 				return 0;

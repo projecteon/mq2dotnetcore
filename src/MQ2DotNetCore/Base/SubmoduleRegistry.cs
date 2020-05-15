@@ -278,6 +278,11 @@ namespace MQ2DotNetCore.Base
 					cancellationTokenSource = new CancellationTokenSource();
 
 					var startTime = DateTime.Now;
+
+					// TODO: We currently run all the programs using the task scheduler from our synchronization context
+					// It would be nice if we could write all of the MQ2 api's that we provide as async methods that run
+					// on the sync context and run the program logic that's not an MQ2 call through run on task pool
+					// threads. 
 					submoduleProgramTask = submoduleProgramInstance.RunAsync(commandArguments, mq2Dependencies, cancellationTokenSource.Token);
 					submoduleProgramWrapperTask = Task.Factory.StartNew(
 						async () => await submoduleProgramTask,

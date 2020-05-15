@@ -117,6 +117,12 @@ namespace MQ2DotNetCore.Base
 							// When an async command is executed, instead of calling the handler directly, a task is created to await the handler
 							// As I understand it, this basically means the handler will be posted as a continuation to MQ2SynchronizationContext,
 							// and run on the next DoEvents()
+
+							// TODO: We currently run all the programs using the task scheduler from our synchronization context
+							// It would be nice if we could write all of the MQ2 api's that we provide as async methods that run
+							// on the sync context and run the program logic that's not an MQ2 call run on task pool
+							// threads. 
+
 							var startTime = DateTime.Now;
 							asyncCommandTask = asyncCommandHandler(arguments, linkedCancellationTokenSource.Token);
 							wrapperTask = Task.Factory.StartNew(
