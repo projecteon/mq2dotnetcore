@@ -1,6 +1,6 @@
 <Project>
 
-	<!-- Shared properties -->
+	<!-- Shared properties, define your local values for these in a local.env.props file -->
 	<PropertyGroup>
 		<EQInstallRootFolder>C:\Users\Public\Daybreak Game Company\Installed Games\EverQuest</EQInstallRootFolder>
 		<MQ2InstallLiveRootFolder>C:\Downloads\EQ\VeryVanilla\Live\Release</MQ2InstallLiveRootFolder>
@@ -9,7 +9,11 @@
 		<!-- Deploy after build tasks require node.js is installed and local packages are installed via yarn/npm -->
 		<DeployMQ2DotNetCoreFilesAfterBuild>true</DeployMQ2DotNetCoreFilesAfterBuild>
 		<DeployProgramFilesAfterBuild>true</DeployProgramFilesAfterBuild>
+	</PropertyGroup>
 
+	<Import Project="local.env.props" Condition="exists('local.env.props')" />
+
+	<PropertyGroup>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 

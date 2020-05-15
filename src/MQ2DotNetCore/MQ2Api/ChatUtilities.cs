@@ -183,6 +183,15 @@ namespace MQ2DotNetCore.MQ2Api
 
 						throw;
 					}
+					catch (OperationCanceledException operationCancelledException)
+					{
+						if (operationCancelledException?.CancellationToken == timeoutCancellationSource.Token)
+						{
+							return false;
+						}
+
+						throw;
+					}
 				}
 
 				using (var linkedCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(timeoutCancellationSource.Token, cancellationToken))
@@ -193,7 +202,7 @@ namespace MQ2DotNetCore.MQ2Api
 							predicate,
 							subscribe,
 							unsubscribe,
-							timeoutCancellationSource.Token
+							linkedCancellationSource.Token
 						);
 
 						return true;
@@ -201,6 +210,17 @@ namespace MQ2DotNetCore.MQ2Api
 					catch (TaskCanceledException taskCancelledException)
 					{
 						if (taskCancelledException?.CancellationToken == linkedCancellationSource.Token
+							&& timeoutCancellationSource.IsCancellationRequested
+							&& !cancellationToken.IsCancellationRequested)
+						{
+							return false;
+						}
+
+						throw;
+					}
+					catch (OperationCanceledException operationCancelledException)
+					{
+						if (operationCancelledException?.CancellationToken == linkedCancellationSource.Token
 							&& timeoutCancellationSource.IsCancellationRequested
 							&& !cancellationToken.IsCancellationRequested)
 						{

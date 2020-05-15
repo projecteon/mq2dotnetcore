@@ -1,4 +1,5 @@
 ﻿using JetBrains.Annotations;
+using MQ2DotNetCore.Logging;
 using MQ2DotNetCore.MQ2Api.DataTypes;
 using System;
 
@@ -333,11 +334,19 @@ namespace MQ2DotNetCore.MQ2Api
 			// To get an MQ2TypeVar from a TLO, first we call FindMQ2Data to get a function pointer to the TLO's function
 			var tlo = MQ2NativeHelper.FindMQ2Data(name);// ?? throw new KeyNotFoundException();
 
+#if DEBUG
+			FileLoggingHelper.LogTrace($"TLO date item for {name}: {tlo.pFunction}");
+#endif
+
 			// Then we call that function, providing the index as a parameter
 			if (tlo.pFunction == IntPtr.Zero || index == null || !tlo.Function(index, out var typeVar))
 			{
 				return default;
 			}
+
+#if DEBUG
+			FileLoggingHelper.LogTrace($"TLO typeVar.pType for index {index}: {typeVar.pType}");
+#endif
 
 			return (T)_typeFactory.Create(typeVar);
 		}

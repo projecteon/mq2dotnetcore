@@ -170,6 +170,7 @@ namespace MQ2DotNetCore.Base
 #endif
 
 							CleanupHelper.TryDispose(submoduleProgramWrapper);
+							++removedTaskCount;
 							continue;
 						}
 

@@ -562,13 +562,24 @@ namespace MQ2DotNetCore
 
 				if ((pulseCount % 250) == 0)
 				{
-					SubmoduleRegistry.Instance.ProcessRunningProgramTasks();
+					var removedProgramCount = SubmoduleRegistry.Instance.ProcessRunningProgramTasks();
 				}
 
 				if ((pulseCount % 350) == 0)
 				{
 					_mq2CommandRegistry.ProcessAsyncCommandTasks();
 				}
+
+#if DEBUG
+				if ((pulseCount % 10_000) == 0)
+				{
+					FileLoggingHelper.LogDebug($"(Pulse {pulseCount}) GC.GetTotalMemory(): {GC.GetTotalMemory(true)}");
+				}
+				else if ((pulseCount % 1_000) == 0)
+				{
+					FileLoggingHelper.LogDebug($"(Pulse {pulseCount}) GC.GetTotalMemory(): {GC.GetTotalMemory(false)}");
+				}
+#endif
 
 				if (pulseCount > 1_000_000)
 				{

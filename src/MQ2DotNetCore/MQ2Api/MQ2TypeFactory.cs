@@ -51,17 +51,17 @@ namespace MQ2DotNetCore.MQ2Api
 		{
 			if (assemblyToCheck == null)
 			{
-				return false;
+				return true;
 			}
 
 			// We only need to look for types in the MQ2DotNetCore assembly or in assemblies that reference it...
 			if (assemblyToCheck == MQ2DotNetCoreAssemblyInformation.MQ2DotNetCoreAssembly)
 			{
-				return true;
+				return false;
 			}
 
 			var thisAssemblyName = MQ2DotNetCoreAssemblyInformation.AssemblyName.Name ?? "MQ2DotNetCore";
-			return assemblyToCheck.GetReferencedAssemblies()
+			return !assemblyToCheck.GetReferencedAssemblies()
 				.Any(referencedAssembly => referencedAssembly?.Name?.Contains(thisAssemblyName) == true);
 		}
 
@@ -73,6 +73,10 @@ namespace MQ2DotNetCore.MQ2Api
 		public MQ2DataType Create(MQ2TypeVar typeVar)
 		{
 			CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2TypeFactory));
+
+#if DEBUG
+			FileLoggingHelper.LogTrace($"Attempting to construct instance of: {typeVar}");
+#endif
 
 			if (_parentFactory != null
 				&& _parentFactory._constructorsDictionary.TryGetValue(typeVar.pType, out var registeredConstructorFromParent))
@@ -86,6 +90,7 @@ namespace MQ2DotNetCore.MQ2Api
 				return registeredConstructor(this, typeVar);
 			}
 
+			FileLoggingHelper.LogWarning($"Did not find registered constructor for: {typeVar}");
 			return new MQ2DataType(this, typeVar);
 		}
 
@@ -95,12 +100,16 @@ namespace MQ2DotNetCore.MQ2Api
 
 			if (assemblyToRegisterTypesFor == null)
 			{
+				FileLoggingHelper.LogWarning($"Assembly to register types for is null");
 				return;
 			}
+
+			FileLoggingHelper.LogDebug($"Registering types in assembly: {assemblyToRegisterTypesFor.FullName}");
 
 			if (_registeredAssemblies.Contains(assemblyToRegisterTypesFor)
 				|| _parentFactory?._registeredAssemblies.Contains(assemblyToRegisterTypesFor) == true)
 			{
+				FileLoggingHelper.LogDebug($"Assembly is already registered: {assemblyToRegisterTypesFor.FullName}");
 				return;
 			}
 
@@ -173,6 +182,10 @@ namespace MQ2DotNetCore.MQ2Api
 					var constructor = Expression.Lambda<Func<MQ2TypeFactory, MQ2TypeVar, MQ2DataType>>(
 						Expression.New(constructorForType, typeFactoryParam, typeVarParam), typeFactoryParam, typeVarParam);
 
+#if DEBUG
+					FileLoggingHelper.LogTrace($"Registering constructor for type: {mq2TypeAttribute.TypeName}");
+#endif
+
 					Register(mq2TypeAttribute.TypeName, constructor.Compile());
 				}
 			}
@@ -201,6 +214,10 @@ namespace MQ2DotNetCore.MQ2Api
 			{
 				throw new InvalidOperationException($"An MQ2DataType for {typeName} has already been registered");
 			}
+
+#if DEBUG
+			FileLoggingHelper.LogTrace($"Adding constructor to dictionary for data type pointer: {dataType}");
+#endif
 
 			if (!_constructorsDictionary.TryAdd(dataType, constructor))
 			{
