@@ -9,6 +9,7 @@ trim_trailing_whitespace = true
 ###############################
 # Code Analysis Configurations
 ###############################
+[*.{cs,csx,vb,vbx}]
 
 # Rule: (CA1000) Do not declare static members on generic types.
 dotnet_diagnostic.CA1000.severity    = suggestion
@@ -53,7 +54,7 @@ dotnet_diagnostic.CA1056.severity    = suggestion
 dotnet_diagnostic.CA1060.severity    = suggestion
 
 # Rule: (CA1062) Validate arguments of externally visible public methods. Reason: These should be validated to ensure we add necessary guards to ensure the ArgumentNullExceptions are thrown in lieu of null reference exceptions in unexpected locations. This rule is important to ensure we add guards to public methods where the the parameter type is a non-nullable reference type but the method is public so it might be consumed in projects that don't have nullable reference types enabled.
-#dotnet_diagnostic.CA1062.severity    = error
+#dotnet_diagnostic.CA1062.severity    = none
 
 # Rule: (CA1063) Implement IDisposable Correctly.  Reason: There are no cases of unmanaged resources being used so there is no need to use the more complicate dispose pattern.
 dotnet_diagnostic.CA1063.severity    = none
@@ -453,7 +454,6 @@ dotnet_diagnostic.VSTHRD111.severity = none
 dotnet_diagnostic.VSTHRD200.severity = none
 
 # Code files
-[*.{cs,csx,vb,vbx}]
 indent_size = 4
 insert_final_newline = true
 charset = utf-8-bom

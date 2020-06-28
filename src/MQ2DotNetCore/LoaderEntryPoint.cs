@@ -492,6 +492,7 @@ namespace MQ2DotNetCore
 #if DEBUG
 				FileLoggingHelper.LogTrace("Method was called");
 #endif
+
 				SubmoduleRegistry.Instance.ExecuteForEachSubmodule(NotifyEndZone);
 			}
 			catch (Exception exc)

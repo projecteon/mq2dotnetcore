@@ -80,6 +80,11 @@ if (!isNullOrUndefined(OptionParser.argv.skipUnmodified)) {
 	skipUnmodified = Boolean(OptionParser.argv.skipUnmodified);
 }
 
+let skipWhenDestinationIsNewer = true;
+if (!isNullOrUndefined(OptionParser.argv.skipWhenDestinationIsNewer)) {
+	skipUnmodified = Boolean(OptionParser.argv.skipWhenDestinationIsNewer);
+}
+
 console.log(OptionParser.argv)
 
 let hasRequiredParameters = true;
@@ -104,6 +109,7 @@ class DeployFilesTask {
 	private readonly isPurgeAfterCopyEnabled: boolean;
 	private readonly isRenameAnyLockedFilesEnabled: boolean;
 	private readonly isSkipUnmodifiedEnabled: boolean;
+	private readonly isSkipWhenDestinationIsNewerEnabled: boolean;
 	private readonly sourcePath: string;
 
 	constructor(
@@ -111,6 +117,7 @@ class DeployFilesTask {
 		isPurgeAfterCopyEnabled: boolean,
 		isRenameAnyLockedFilesEnabled: boolean,
 		isSkipUnmodifiedEnabled: boolean,
+		isSkipWhenDestinationIsNewerEnabled: boolean,
 		sourcePath: string
 	)
 	{
@@ -118,6 +125,7 @@ class DeployFilesTask {
 		this.isPurgeAfterCopyEnabled = isPurgeAfterCopyEnabled;
 		this.isRenameAnyLockedFilesEnabled = isRenameAnyLockedFilesEnabled;
 		this.isSkipUnmodifiedEnabled = isSkipUnmodifiedEnabled;
+		this.isSkipWhenDestinationIsNewerEnabled = isSkipWhenDestinationIsNewerEnabled;
 		this.sourcePath = sourcePath;
 	}
 
@@ -129,7 +137,7 @@ class DeployFilesTask {
 			const relativeSourcePath = PathTools.relative(this.sourcePath, sourceFilePath);
 			absoluteDestinationPath = PathTools.resolve(destinationDirectory, relativeSourcePath);
 
-			if (this.isSkipUnmodifiedEnabled) {
+			if (this.isSkipUnmodifiedEnabled || this.isSkipWhenDestinationIsNewerEnabled) {
 				try {
 					if (FileSystemTools.existsSync(absoluteDestinationPath)) {
 
@@ -137,9 +145,22 @@ class DeployFilesTask {
 
 						const isUnmodified = destinationFileStats
 							&& destinationFileStats.size === sourceItem.stats.size
-							&& destinationFileStats.mtimeMs === sourceItem.stats.mtimeMs
+							&& destinationFileStats.mtimeMs === sourceItem.stats.mtimeMs;
 
-						if (isUnmodified) {
+						if (isUnmodified && this.isSkipUnmodifiedEnabled) {
+							console.log(`Skipping file copy because destination file is unmodified: ${absoluteDestinationPath}`);
+							return {
+								DestinationPath: absoluteDestinationPath,
+								SourcePath: sourceFilePath,
+								Status: FileCopyStatus.SkippedUnmodified
+							};
+						}
+
+						const isDestinationNewer = destinationFileStats
+							&& destinationFileStats.mtimeMs > sourceItem.stats.mtimeMs;
+
+						if (isDestinationNewer && this.isSkipWhenDestinationIsNewerEnabled) {
+							console.log(`Skipping file copy because destination file is newer: ${absoluteDestinationPath}`);
 							return {
 								DestinationPath: absoluteDestinationPath,
 								SourcePath: sourceFilePath,
@@ -443,7 +464,7 @@ class DeployFilesTask {
 }
 
 // Ok to cast these as string, we validate they're defined above
-const deployFilesTask = new DeployFilesTask(destinationPath as string, purgeAfterCopy, renameLockedFiles, skipUnmodified, sourcePath as string);
+const deployFilesTask = new DeployFilesTask(destinationPath as string, purgeAfterCopy, renameLockedFiles, skipUnmodified, skipWhenDestinationIsNewer, sourcePath as string);
 deployFilesTask.runAsync()
 	.then(() => {
 		process.exit(0);

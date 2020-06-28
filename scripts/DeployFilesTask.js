@@ -96,6 +96,10 @@ var skipUnmodified = true;
 if (!isNullOrUndefined(OptionParser.argv.skipUnmodified)) {
     skipUnmodified = Boolean(OptionParser.argv.skipUnmodified);
 }
+var skipWhenDestinationIsNewer = true;
+if (!isNullOrUndefined(OptionParser.argv.skipWhenDestinationIsNewer)) {
+    skipUnmodified = Boolean(OptionParser.argv.skipWhenDestinationIsNewer);
+}
 console.log(OptionParser.argv);
 var hasRequiredParameters = true;
 if (!sourcePath) {
@@ -110,7 +114,7 @@ if (!hasRequiredParameters) {
     process.exit(1);
 }
 var DeployFilesTask = /** @class */ (function () {
-    function DeployFilesTask(destinationPath, isPurgeAfterCopyEnabled, isRenameAnyLockedFilesEnabled, isSkipUnmodifiedEnabled, sourcePath) {
+    function DeployFilesTask(destinationPath, isPurgeAfterCopyEnabled, isRenameAnyLockedFilesEnabled, isSkipUnmodifiedEnabled, isSkipWhenDestinationIsNewerEnabled, sourcePath) {
         var _this = this;
         this.runAsync = function () { return __awaiter(_this, void 0, void 0, function () {
             var doesSurcePathExist, startTime, formattedStartTime, sourceFileItems, destinationDirectory, destinationDirectoryAlreadyExists, sourcePathInformation, isSingleFileCopy, destinationFileItems, removedOldFileCount, removedOldFileFailureCount, _i, destinationFileItems_1, nextFileItem, oldFilePathToRemove, removeFileError_1, copyFilePromises, _a, sourceFileItems_1, nextFileItem, fileCopyResults, renamedFileCount, unknownStatusResults, successResults, failedResults, skippedLockedResults, skippedUnmodifiedResults, _b, fileCopyResults_1, nextFileCopyResult, wasSuccesful, runPurgeAfterCopy, destinationFileItems, purgedFileSuccessCount, purgedFileFailedCount, _loop_1, this_1, _c, destinationFileItems_2, nextDestinationFileItem, endTime, formattedEndTime, ellapsedMilliseconds, taskError_1;
@@ -352,11 +356,12 @@ var DeployFilesTask = /** @class */ (function () {
         this.isPurgeAfterCopyEnabled = isPurgeAfterCopyEnabled;
         this.isRenameAnyLockedFilesEnabled = isRenameAnyLockedFilesEnabled;
         this.isSkipUnmodifiedEnabled = isSkipUnmodifiedEnabled;
+        this.isSkipWhenDestinationIsNewerEnabled = isSkipWhenDestinationIsNewerEnabled;
         this.sourcePath = sourcePath;
     }
     DeployFilesTask.prototype.doFileCopyAsync = function (sourceItem, destinationDirectory, isRenameAndReplacedEnabled) {
         return __awaiter(this, void 0, void 0, function () {
-            var sourceFilePath, absoluteDestinationPath, relativeSourcePath, destinationFileStats, isUnmodified, absoluteDestinationDirectory, asyncError_1, shouldTryRenaming, previousFileRenamePath;
+            var sourceFilePath, absoluteDestinationPath, relativeSourcePath, destinationFileStats, isUnmodified, isDestinationNewer, absoluteDestinationDirectory, asyncError_1, shouldTryRenaming, previousFileRenamePath;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -364,14 +369,25 @@ var DeployFilesTask = /** @class */ (function () {
                         sourceFilePath = sourceItem.path;
                         relativeSourcePath = PathTools.relative(this.sourcePath, sourceFilePath);
                         absoluteDestinationPath = PathTools.resolve(destinationDirectory, relativeSourcePath);
-                        if (this.isSkipUnmodifiedEnabled) {
+                        if (this.isSkipUnmodifiedEnabled || this.isSkipWhenDestinationIsNewerEnabled) {
                             try {
                                 if (FileSystemTools.existsSync(absoluteDestinationPath)) {
                                     destinationFileStats = FileSystemTools.statSync(absoluteDestinationPath);
                                     isUnmodified = destinationFileStats
                                         && destinationFileStats.size === sourceItem.stats.size
                                         && destinationFileStats.mtimeMs === sourceItem.stats.mtimeMs;
-                                    if (isUnmodified) {
+                                    if (isUnmodified && this.isSkipUnmodifiedEnabled) {
+                                        console.log("Skipping file copy because destination file is unmodified: " + absoluteDestinationPath);
+                                        return [2 /*return*/, {
+                                                DestinationPath: absoluteDestinationPath,
+                                                SourcePath: sourceFilePath,
+                                                Status: FileCopyStatus.SkippedUnmodified
+                                            }];
+                                    }
+                                    isDestinationNewer = destinationFileStats
+                                        && destinationFileStats.mtimeMs > sourceItem.stats.mtimeMs;
+                                    if (isDestinationNewer && this.isSkipWhenDestinationIsNewerEnabled) {
+                                        console.log("Skipping file copy because destination file is newer: " + absoluteDestinationPath);
                                         return [2 /*return*/, {
                                                 DestinationPath: absoluteDestinationPath,
                                                 SourcePath: sourceFilePath,
@@ -478,7 +494,7 @@ var DeployFilesTask = /** @class */ (function () {
     return DeployFilesTask;
 }());
 // Ok to cast these as string, we validate they're defined above
-var deployFilesTask = new DeployFilesTask(destinationPath, purgeAfterCopy, renameLockedFiles, skipUnmodified, sourcePath);
+var deployFilesTask = new DeployFilesTask(destinationPath, purgeAfterCopy, renameLockedFiles, skipUnmodified, skipWhenDestinationIsNewer, sourcePath);
 deployFilesTask.runAsync()
     .then(function () {
     process.exit(0);
