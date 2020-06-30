@@ -19,8 +19,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MQ2DotNetCore", "src\MQ2Dot
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MQ2DotNetCoreLoader", "src\MQ2DotNetCoreLoader\MQ2DotNetCoreLoader.vcxproj", "{40EA8037-3522-40CC-BB01-C666B8865E21}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RhinoBot", "src\RhinoBot\RhinoBot.csproj", "{9CCA8010-D875-4C39-A892-D570E7B6813C}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestProgram", "src\TestProgram\TestProgram.csproj", "{CD8C5DB5-8546-4AE8-BB74-C8E98866F66C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{82482F41-1D8F-49CE-918D-1A40A0D1961B}"
@@ -31,8 +29,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{8248
 		tsconfig.json = tsconfig.json
 		yarn.lock = yarn.lock
 	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleAppForTestingStuff", "src\ConsoleAppForTestingStuff\ConsoleAppForTestingStuff.csproj", "{87E1B4D4-92F3-4BCC-B3B2-EECB323B4181}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -56,14 +52,6 @@ Global
 		{40EA8037-3522-40CC-BB01-C666B8865E21}.Release|Any CPU.ActiveCfg = Release|Win32
 		{40EA8037-3522-40CC-BB01-C666B8865E21}.Release|x86.ActiveCfg = Release|Win32
 		{40EA8037-3522-40CC-BB01-C666B8865E21}.Release|x86.Build.0 = Release|Win32
-		{9CCA8010-D875-4C39-A892-D570E7B6813C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9CCA8010-D875-4C39-A892-D570E7B6813C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9CCA8010-D875-4C39-A892-D570E7B6813C}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{9CCA8010-D875-4C39-A892-D570E7B6813C}.Debug|x86.Build.0 = Debug|Any CPU
-		{9CCA8010-D875-4C39-A892-D570E7B6813C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9CCA8010-D875-4C39-A892-D570E7B6813C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9CCA8010-D875-4C39-A892-D570E7B6813C}.Release|x86.ActiveCfg = Release|Any CPU
-		{9CCA8010-D875-4C39-A892-D570E7B6813C}.Release|x86.Build.0 = Release|Any CPU
 		{CD8C5DB5-8546-4AE8-BB74-C8E98866F66C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{CD8C5DB5-8546-4AE8-BB74-C8E98866F66C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CD8C5DB5-8546-4AE8-BB74-C8E98866F66C}.Debug|x86.ActiveCfg = Debug|Any CPU
@@ -72,14 +60,6 @@ Global
 		{CD8C5DB5-8546-4AE8-BB74-C8E98866F66C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{CD8C5DB5-8546-4AE8-BB74-C8E98866F66C}.Release|x86.ActiveCfg = Release|Any CPU
 		{CD8C5DB5-8546-4AE8-BB74-C8E98866F66C}.Release|x86.Build.0 = Release|Any CPU
-		{87E1B4D4-92F3-4BCC-B3B2-EECB323B4181}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{87E1B4D4-92F3-4BCC-B3B2-EECB323B4181}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{87E1B4D4-92F3-4BCC-B3B2-EECB323B4181}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{87E1B4D4-92F3-4BCC-B3B2-EECB323B4181}.Debug|x86.Build.0 = Debug|Any CPU
-		{87E1B4D4-92F3-4BCC-B3B2-EECB323B4181}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{87E1B4D4-92F3-4BCC-B3B2-EECB323B4181}.Release|Any CPU.Build.0 = Release|Any CPU
-		{87E1B4D4-92F3-4BCC-B3B2-EECB323B4181}.Release|x86.ActiveCfg = Release|Any CPU
-		{87E1B4D4-92F3-4BCC-B3B2-EECB323B4181}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -87,9 +67,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{CBF094BF-28C9-4764-B7CB-E180C020DB2E} = {3DD7C4F9-0841-45EC-AD46-8D369F435779}
 		{40EA8037-3522-40CC-BB01-C666B8865E21} = {3DD7C4F9-0841-45EC-AD46-8D369F435779}
-		{9CCA8010-D875-4C39-A892-D570E7B6813C} = {3DD7C4F9-0841-45EC-AD46-8D369F435779}
 		{CD8C5DB5-8546-4AE8-BB74-C8E98866F66C} = {3DD7C4F9-0841-45EC-AD46-8D369F435779}
-		{87E1B4D4-92F3-4BCC-B3B2-EECB323B4181} = {3DD7C4F9-0841-45EC-AD46-8D369F435779}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3A5F6FC6-8612-4587-9706-DC0A4B559E22}

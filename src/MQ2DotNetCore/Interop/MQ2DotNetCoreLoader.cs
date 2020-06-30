@@ -8,7 +8,7 @@ namespace MQ2DotNetCore.Interop
 {
 	internal static class MQ2DotNetCoreLoader
 	{
-		public static readonly string AbsoluteDllPath = Path.GetFullPath(Path.Combine(MQ2DotNetCoreAssemblyInformation.AssemblyDirectory, @"..\MQ2DotNetLoader.dll"));
+		public static readonly string AbsoluteDllPath = Path.GetFullPath(Path.Combine(MQ2DotNetCoreAssemblyInformation.AssemblyDirectory, @"..\MQ2DotNetCoreLoader.dll"));
 		public const string DllName = "MQ2DotNetCoreLoader.dll";
 		public const string RelativeDllpath = @"..\MQ2DotNetCoreLoader.dll";
 
