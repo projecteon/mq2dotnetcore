@@ -100,6 +100,7 @@ var skipWhenDestinationIsNewer = true;
 if (!isNullOrUndefined(OptionParser.argv.skipWhenDestinationIsNewer)) {
     skipUnmodified = Boolean(OptionParser.argv.skipWhenDestinationIsNewer);
 }
+console.log('Running DeployFilesTask... arguments:\n');
 console.log(OptionParser.argv);
 var hasRequiredParameters = true;
 if (!sourcePath) {

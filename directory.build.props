@@ -4,7 +4,7 @@
 	<PropertyGroup>
 		<EQInstallRootFolder>C:\Users\Public\Daybreak Game Company\Installed Games\EverQuest</EQInstallRootFolder>
 		<MQ2InstallLiveRootFolder>C:\Downloads\EQ\VeryVanilla\Live\Release</MQ2InstallLiveRootFolder>
-		<MQ2SourceRootFolder>C:\Source\VeryVanilla\</MQ2SourceRootFolder>
+		<MQ2SourceRootFolder>C:\Source\VeryVanilla</MQ2SourceRootFolder>
 
 		<!-- Deploy after build tasks require node.js is installed and local packages are installed via yarn/npm -->
 		<!-- If you don't want to deploy after build and/or don't want to install the nodejs runtime, set these to false in your local.env.props file -->
@@ -37,7 +37,7 @@
 	&lt;PropertyGroup&gt;
 		&lt;EQInstallRootFolder&gt;C:\Users\Public\Daybreak Game Company\Installed Games\EverQuest&lt;/EQInstallRootFolder&gt;
 		&lt;MQ2InstallLiveRootFolder&gt;C:\Downloads\EQ\VeryVanilla\Live\Release&lt;/MQ2InstallLiveRootFolder&gt;
-		&lt;MQ2SourceRootFolder&gt;C:\Source\VeryVanilla\&lt;/MQ2SourceRootFolder&gt;
+		&lt;MQ2SourceRootFolder&gt;C:\Source\VeryVanilla&lt;/MQ2SourceRootFolder&gt;
 
 		&lt;!-- Deploy after build tasks require node.js is installed and local packages are installed via yarn/npm --&gt;
 		&lt;!-- If you don't want to deploy after build and/or don't want to install the nodejs runtime, set these to false in your local.env.props file --&gt;

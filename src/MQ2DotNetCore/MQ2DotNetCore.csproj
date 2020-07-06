@@ -18,21 +18,16 @@
 		</None>
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="MQ2Api\DataTypes\" />
-	</ItemGroup>
-
 	<Target Name="DeployFiles" AfterTargets="Build" Condition="'$(DeployMQ2DotNetCoreFilesAfterBuild)'=='true'">
 		<PropertyGroup>
-			<FullOutputPathForProject>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)\$(OutDir)'))</FullOutputPathForProject>
-			<ScriptsFolder>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)\..\..\scripts'))</ScriptsFolder>
-			<MQ2DotNetCoreDeployFolder>$(MQ2InstallLiveRootFolder)\MQ2DotNetCore</MQ2DotNetCoreDeployFolder>
+			<FullOutputPathForProject>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)\$(OutDir)').TrimEnd('\').TrimEnd('/'))</FullOutputPathForProject>
+			<ScriptsFolder>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)\..\..\scripts').TrimEnd('\').TrimEnd('/'))</ScriptsFolder>
+			<MQ2DotNetCoreDeployFolder>$([System.IO.Path]::GetFullPath('$(MQ2InstallLiveRootFolder)\MQ2DotNetCore').TrimEnd('\').TrimEnd('/'))</MQ2DotNetCoreDeployFolder>
 		</PropertyGroup>
 		
 		<Message Text="&#xA;Output Directory: $(FullOutputPathForProject)&#xA;&#xA;MQ2DotNetCore Deploy Folder: $(MQ2DotNetCoreDeployFolder)&#xA;&#xA;Scripts Folder: $(ScriptsFolder)&#xA;&#xA;Executing Deploy Files Task: node $(ScriptsFolder)\DeployFilesTask.js --sourcePath '$(FullOutputPathForProject)' --destinationPath '$(MQ2DotNetCoreDeployFolder)'&#xA;" />
 
-		<Exec Command="node $(ScriptsFolder)\DeployFilesTask.js --sourcePath '$(FullOutputPathForProject)' --destinationPath '$(MQ2DotNetCoreDeployFolder)'" />
-		
+		<Exec Command="node &quot;$(ScriptsFolder)\DeployFilesTask.js&quot; --sourcePath &quot;$(FullOutputPathForProject)&quot; --destinationPath &quot;$(MQ2DotNetCoreDeployFolder)&quot;" />
 	</Target>
 
 </Project>
