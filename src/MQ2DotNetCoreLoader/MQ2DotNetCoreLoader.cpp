@@ -29,7 +29,7 @@
 //	rename("ReportEvent", "InteropServices_ReportEvent")
 
 
-PLUGIN_VERSION(0.1);
+PLUGIN_VERSION(1.0);
 PreSetup("MQ2DotNetCoreLoader");
 
 bool g_bLoaded{ false };

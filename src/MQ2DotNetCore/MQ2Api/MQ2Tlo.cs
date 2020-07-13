@@ -332,10 +332,10 @@ namespace MQ2DotNetCore.MQ2Api
 		public T? GetTLO<T>(string name, string? index = "") where T : MQ2DataType
 		{
 			// To get an MQ2TypeVar from a TLO, first we call FindMQ2Data to get a function pointer to the TLO's function
-			var tlo = MQ2NativeHelper.FindMQ2Data(name);// ?? throw new KeyNotFoundException();
+			var tlo = _typeFactory.MQ2NativeHelper.FindMQ2Data(name);// ?? throw new KeyNotFoundException();
 
 #if DEBUG
-			FileLoggingHelper.LogTrace($"TLO date item for {name}: {tlo.pFunction}");
+			_typeFactory.Logger?.LogTracePrefixed($"TLO date item for {name}: {tlo.pFunction}");
 #endif
 
 			// Then we call that function, providing the index as a parameter
@@ -345,7 +345,7 @@ namespace MQ2DotNetCore.MQ2Api
 			}
 
 #if DEBUG
-			FileLoggingHelper.LogTrace($"TLO typeVar.pType for index {index}: {typeVar.pType}");
+			_typeFactory.Logger?.LogTracePrefixed($"TLO typeVar.pType for index {index}: {typeVar.pType}");
 #endif
 
 			return (T)_typeFactory.Create(typeVar);

@@ -22,7 +22,7 @@ Program Deploy Folder: $(ProgramDeployFolder)
 
 Scripts Folder: $(ScriptsFolder)
 
-Executing Deploy Files Task: node $(ScriptsFolder)\DeployFilesTask.js --sourcePath '$(FullOutputPathForProject)' --destinationPath '$(ProgramDeployFolder)'
+Executing Deploy Files Task: node &quot;$(ScriptsFolder)\DeployFilesTask.js&quot; --sourcePath &quot;$(FullOutputPathForProject)&quot; --destinationPath &quot;$(ProgramDeployFolder)&quot;
 "
 	/>
 

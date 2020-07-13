@@ -1,4 +1,5 @@
-﻿using MQ2DotNetCore.Base;
+﻿using Microsoft.Extensions.Logging;
+using MQ2DotNetCore.Base;
 using MQ2DotNetCore.Interop;
 using MQ2DotNetCore.Logging;
 using MQ2DotNetCore.MQ2Api;
@@ -15,21 +16,53 @@ namespace MQ2DotNetCore
 	{
 		private static SafeLibraryHandle? _loaderLibraryHandle;
 
+		private static readonly ILoggerFactory? _loggerFactory;
+		private static readonly ILogger? _logger;
 		private static readonly MQ2CommandRegistry _mq2CommandRegistry;
+		private static readonly ILogger<MQ2Dependencies>? _mq2DependenciesLogger;
+		private static readonly MQ2 _mq2Instance;
 		private static readonly MQ2SynchronizationContext _mq2SynchronizationContext;
+		private static readonly MQ2DotNetCoreOptions _options;
+		private static readonly MQ2TypeFactory _rootTypeFactory;
+		private static readonly SubmoduleRegistry _submoduleRegistry;
 
 		static LoaderEntryPoint()
 		{
+			var configuration = ConfigurationHelper.GetConfiguration();
+			_options = new MQ2DotNetCoreOptions(configuration);
+
+			_loggerFactory = ConfigurationHelper.CreateLoggerFactory(configuration, _options);
+			_logger = _loggerFactory?.CreateLogger(nameof(LoaderEntryPoint));
+
 			_mq2SynchronizationContext = new MQ2SynchronizationContext();
-			_mq2CommandRegistry = new MQ2CommandRegistry(_mq2SynchronizationContext);
+
+			_mq2DependenciesLogger = _loggerFactory?.CreateLogger<MQ2Dependencies>();
+
+			var mq2NativeHelperLogger = _loggerFactory?.CreateLogger<MQ2NativeHelper>();
+			var mq2NativeHelper = new MQ2NativeHelper(mq2NativeHelperLogger);
+
+			_mq2Instance = new MQ2(mq2NativeHelper);
+
+			var commandTaskWrapperLogger = _loggerFactory?.CreateLogger<MQ2AsyncCommandTaskWrapper>();
+			var commandRegistryLogger = _loggerFactory?.CreateLogger<MQ2CommandRegistry>();
+			_mq2CommandRegistry = new MQ2CommandRegistry(commandTaskWrapperLogger, commandRegistryLogger, _mq2Instance, _mq2SynchronizationContext);
+
+			var typeFactoryLogger = _loggerFactory?.CreateLogger<MQ2TypeFactory>();
+			_rootTypeFactory = new MQ2TypeFactory(typeFactoryLogger, mq2NativeHelper);
+			_rootTypeFactory.RegisterTypesInAssembly(MQ2DotNetCoreAssemblyInformation.MQ2DotNetCoreAssembly);
+
+			var submoduleRegistryLogger = _loggerFactory?.CreateLogger<SubmoduleRegistry>();
+			var submoduleAssemblyLoadContextLogger = _loggerFactory?.CreateLogger<SubmoduleAssemblyLoadContext>();
+			var submoduleProgramWrapperLogger = _loggerFactory?.CreateLogger<SubmoduleProgramWrapper>();
+			_submoduleRegistry = new SubmoduleRegistry(submoduleRegistryLogger, _mq2Instance, submoduleAssemblyLoadContextLogger, submoduleProgramWrapperLogger);
 		}
 
 		public static int InitializePlugin(IntPtr arg, int argLength)
 		{
 			try
 			{
-				FileLoggingHelper.LogInformation("The InitializePlugin(..) method is executing...");
-				FileLoggingHelper.LogDebug($"AssemblyName: {MQ2DotNetCoreAssemblyInformation.AssemblyName.Name},   AssemblyVersion: {MQ2DotNetCoreAssemblyInformation.Version}");
+				_logger?.LogInformationPrefixed("The InitializePlugin(..) method is executing...");
+				_logger?.LogDebugPrefixed($"AssemblyName: {MQ2DotNetCoreAssemblyInformation.AssemblyName.Name},   AssemblyVersion: {MQ2DotNetCoreAssemblyInformation.Version}");
 
 				TaskScheduler.UnobservedTaskException += HandleUnobservedTaskException;
 
@@ -37,11 +70,11 @@ namespace MQ2DotNetCore
 				// Here we set set the exported function pointers to our managed function delegates in this class
 
 				// TODO: Consider passing/parsing the loader dll path through parameters
-				FileLoggingHelper.LogDebug($"Loader DLL Path: {MQ2DotNetCoreLoader.AbsoluteDllPath}");
+				_logger?.LogDebugPrefixed($"Loader DLL Path: {MQ2DotNetCoreLoader.AbsoluteDllPath}");
 				_loaderLibraryHandle = Kernel32.NativeMethods.LoadLibrary(MQ2DotNetCoreLoader.AbsoluteDllPath);
 				if (_loaderLibraryHandle == null)
 				{
-					FileLoggingHelper.LogError($"{nameof(_loaderLibraryHandle)} is null");
+					_logger?.LogErrorPrefixed($"{nameof(_loaderLibraryHandle)} is null");
 					return 1;
 				}
 
@@ -61,9 +94,9 @@ namespace MQ2DotNetCore
 				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(_loaderLibraryHandle, "g_pfEndZone"), Marshal.GetFunctionPointerForDelegate(_handleEndZone));
 				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(_loaderLibraryHandle, "g_pfOnZoned"), Marshal.GetFunctionPointerForDelegate(_handleZoned));
 
-				FileLoggingHelper.LogDebug($"Done registering delegates to the loader dll's exported function pointer addresses!");
+				_logger?.LogDebugPrefixed($"Done registering delegates to the loader dll's exported function pointer addresses!");
 
-				FileLoggingHelper.LogDebug("Attempting to register the primary commands...");
+				_logger?.LogDebugPrefixed("Attempting to register the primary commands...");
 
 				// TODO: Possible option to shorten commands, detect if the legacy
 				// MQ2DotNet plugin dll files are present / MQ2 ini entry for MQ2DotNet is present
@@ -93,20 +126,13 @@ namespace MQ2DotNetCore
 				// OnPulse, and the async continuations run during OnPulse anyway so an event handler for that isn't
 				// really necessary...
 
-				FileLoggingHelper.LogDebug("Done registering the primary commands.");
+				_logger?.LogDebugPrefixed("Done registering the primary commands.");
 
 				return 0;
 			}
 			catch (Exception exc)
 			{
-				try
-				{
-					FileLoggingHelper.LogCritical($"InitializePlugin(..) encountered an exception:\n\n{exc}\n");
-				}
-				catch (Exception)
-				{
-
-				}
+				_logger?.LogCriticalPrefixed(exc);
 			}
 
 			return 1;
@@ -127,15 +153,15 @@ namespace MQ2DotNetCore
 					message += $"\n\tUnobserved Exception:\n\n{eventArgs.Exception}\n\n";
 				}
 
-				FileLoggingHelper.LogError(message);
+				_logger?.LogErrorPrefixed(message);
 
 				eventArgs?.SetObserved();
 
-				MQ2.Instance.WriteChatSafe($"{nameof(HandleUnobservedTaskException)} was called. See the log file for more information.");
+				_mq2Instance.WriteChatSafe($"{nameof(HandleUnobservedTaskException)} was called. See the log file for more information.");
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 		}
 
@@ -145,7 +171,7 @@ namespace MQ2DotNetCore
 			{
 				if (commandArguments == null || commandArguments.Length < 1)
 				{
-					MQ2.WriteChatProgram("Usage: /netcorecanceltask <commandName|*>");
+					_mq2Instance.WriteChatProgram("Usage: /netcorecanceltask <commandName|*>");
 					return;
 				}
 
@@ -154,12 +180,12 @@ namespace MQ2DotNetCore
 					? _mq2CommandRegistry.CancelAllAsyncCommandTasks()
 					: _mq2CommandRegistry.CancelAsyncCommandTask(commandNameToStop);
 
-				FileLoggingHelper.LogInformation($"Canceled {canceledTaskCount} async command tasks for command: {commandNameToStop}");
-				MQ2.Instance.WriteChatSafe($"Canceled {canceledTaskCount} async command tasks for command: {commandNameToStop}");
+				_logger?.LogInformationPrefixed($"Canceled {canceledTaskCount} async command tasks for command: {commandNameToStop}");
+				_mq2Instance.WriteChatSafe($"Canceled {canceledTaskCount} async command tasks for command: {commandNameToStop}");
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 		}
 
@@ -169,7 +195,7 @@ namespace MQ2DotNetCore
 			{
 				if (commandArguments == null || commandArguments.Length < 1)
 				{
-					MQ2.WriteChatProgram("Usage: /netcoreend <programName|*>");
+					_mq2Instance.WriteChatProgram("Usage: /netcoreend <programName|*>");
 					return;
 				}
 
@@ -177,16 +203,16 @@ namespace MQ2DotNetCore
 				var programNameToStop = commandArguments[0];
 				if (programNameToStop == "*")
 				{
-					var wereAllStoppedSuccessfully = SubmoduleRegistry.Instance.StopAllPrograms();
+					var wereAllStoppedSuccessfully = _submoduleRegistry.StopAllPrograms();
 					if (wereAllStoppedSuccessfully)
 					{
-						FileLoggingHelper.LogDebug($"All programs stopped and unloaded successfully");
-						MQ2.WriteChatProgram($"All programs stopped and unloaded successfully");
+						_logger?.LogDebugPrefixed($"All programs stopped and unloaded successfully");
+						_mq2Instance.WriteChatProgram($"All programs stopped and unloaded successfully");
 					}
 					else
 					{
-						FileLoggingHelper.LogWarning($"Failed to stop/unload one or more programs!");
-						MQ2.WriteChatProgramWarning($"Failed to stop/unload one or more programs!");
+						_logger?.LogWarningPrefixed("Failed to stop/unload one or more programs!");
+						_mq2Instance.WriteChatProgramWarning($"Failed to stop/unload one or more programs!");
 					}
 
 					return;
@@ -195,27 +221,27 @@ namespace MQ2DotNetCore
 				var shouldSkipCancel = commandArguments.Skip(1).Any(commandArgument => commandArgument == "skipcancel");
 				if (shouldSkipCancel)
 				{
-					var wasStopped = SubmoduleRegistry.Instance.StopProgram(programNameToStop);
+					var wasStopped = _submoduleRegistry.StopProgram(programNameToStop);
 					if (wasStopped)
 					{
-						FileLoggingHelper.LogDebug($"{programNameToStop} program stopped and unloaded successfully");
-						MQ2.WriteChatProgram($"{programNameToStop} program stopped and unloaded successfully");
+						_logger?.LogDebugPrefixed($"{programNameToStop} program stopped and unloaded successfully");
+						_mq2Instance.WriteChatProgram($"{programNameToStop} program stopped and unloaded successfully");
 					}
 					else
 					{
-						FileLoggingHelper.LogWarning($"Failed to stop/unload {programNameToStop} program!");
-						MQ2.WriteChatProgramWarning($"Failed to stop/unload {programNameToStop} program!");
+						_logger?.LogWarningPrefixed($"Failed to stop/unload {programNameToStop} program!");
+						_mq2Instance.WriteChatProgramWarning($"Failed to stop/unload {programNameToStop} program!");
 					}
 				}
 
 				_mq2SynchronizationContext.SetExecuteAndRestore(() =>
 				{
-					FileLoggingHelper.LogDebug($"Scheduling {nameof(SubmoduleRegistry)}.{nameof(SubmoduleRegistry.TryStopProgramAsync)}(..) call to run on synchronization context for program name: {programNameToStop}");
+					_logger?.LogDebugPrefixed($"Scheduling {nameof(SubmoduleRegistry)}.{nameof(SubmoduleRegistry.TryStopProgramAsync)}(..) call to run on synchronization context for program name: {programNameToStop}");
 					Task? tryCancelTask = null;
 					Task<Task>? wrapperTask = null;
 					try
 					{
-						tryCancelTask = SubmoduleRegistry.Instance.TryStopProgramAsync(programNameToStop);
+						tryCancelTask = _submoduleRegistry.TryStopProgramAsync(programNameToStop);
 						wrapperTask = Task.Factory.StartNew(
 							async () => await tryCancelTask,
 							CancellationToken.None,
@@ -225,18 +251,18 @@ namespace MQ2DotNetCore
 					}
 					catch (Exception exc)
 					{
-						FileLoggingHelper.LogError($"Exception attempting to schedule the TryStopProgramAsync task:\n\n{exc}\n");
-						CleanupHelper.TryDispose(tryCancelTask);
-						CleanupHelper.TryDispose(wrapperTask);
+						_logger?.LogErrorPrefixed($"Exception attempting to schedule the TryStopProgramAsync task:\n\n{exc}\n");
+						CleanupHelper.TryDispose(tryCancelTask, _logger);
+						CleanupHelper.TryDispose(wrapperTask, _logger);
 
 						// Try stopping the program without cancelling
-						SubmoduleRegistry.Instance.StopProgram(programNameToStop);
+						_submoduleRegistry.StopProgram(programNameToStop);
 					}
 				});
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 		}
 
@@ -244,7 +270,7 @@ namespace MQ2DotNetCore
 		{
 			try
 			{
-				SubmoduleRegistry.Instance.PrintRunningPrograms();
+				_submoduleRegistry.PrintRunningPrograms();
 
 				_mq2CommandRegistry.PrintRegisteredCommands();
 
@@ -252,7 +278,7 @@ namespace MQ2DotNetCore
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 		}
 
@@ -262,7 +288,7 @@ namespace MQ2DotNetCore
 			{
 				if (commandArguments == null || commandArguments.Length == 0)
 				{
-					MQ2.WriteChatProgram("Usage: /netcorerun <program> [<arg1> <arg2> ...]");
+					_mq2Instance.WriteChatProgram("Usage: /netcorerun <program> [<arg1> <arg2> ...]");
 					return;
 				}
 
@@ -272,7 +298,7 @@ namespace MQ2DotNetCore
 					try
 					{
 						// give the submodule it's own type factory to register type's against, if they wish
-						var submoduleTypeFactory = new MQ2TypeFactory(MQ2TypeFactory.RootFactory);
+						var submoduleTypeFactory = new MQ2TypeFactory(_rootTypeFactory);
 
 						var submoduleCommandRegistry = new MQ2SubmoduleCommandRegistry(_mq2CommandRegistry, submoduleProgramName);
 						var submoduleEventRegistry = new MQ2SubmoduleEventRegistry(submoduleProgramName);
@@ -281,7 +307,8 @@ namespace MQ2DotNetCore
 							new ChatUtilities(submoduleEventRegistry),
 							submoduleCommandRegistry,
 							submoduleEventRegistry,
-							MQ2.Instance,
+							_mq2DependenciesLogger,
+							_mq2Instance,
 							_mq2SynchronizationContext,
 							submoduleTypeFactory,
 							new MQ2Spawns(submoduleTypeFactory),
@@ -289,28 +316,28 @@ namespace MQ2DotNetCore
 							new MQ2Tlo(submoduleTypeFactory)
 						);
 
-						var wasStarted = SubmoduleRegistry.Instance.StartProgram(submoduleProgramName, commandArguments, submoduleDependencies);
+						var wasStarted = _submoduleRegistry.StartProgram(submoduleProgramName, commandArguments, submoduleDependencies);
 						if (wasStarted)
 						{
-							FileLoggingHelper.LogDebug($"{commandArguments[0]} program started successfully");
-							MQ2.WriteChatProgram($"{commandArguments[0]} program started successfully");
+							_logger?.LogDebugPrefixed($"{commandArguments[0]} program started successfully");
+							_mq2Instance.WriteChatProgram($"{commandArguments[0]} program started successfully");
 						}
 						else
 						{
-							FileLoggingHelper.LogWarning($"Failed to start {commandArguments[0]} program!");
-							MQ2.WriteChatProgramWarning($"Failed to start {commandArguments[0]} program!");
+							_logger?.LogWarningPrefixed($"Failed to start {commandArguments[0]} program!");
+							_mq2Instance.WriteChatProgramWarning($"Failed to start {commandArguments[0]} program!");
 						}
 					}
 					catch (Exception exc)
 					{
-						FileLoggingHelper.LogError(exc);
-						MQ2.WriteChatGeneralError($"{nameof(NetRunCommand)} threw an exception: {exc}");
+						_logger?.LogErrorPrefixed(exc);
+						_mq2Instance.WriteChatGeneralError($"{nameof(NetRunCommand)} threw an exception: {exc}");
 					}
 				});
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 		}
 
@@ -360,27 +387,30 @@ namespace MQ2DotNetCore
 
 
 		// Delegates methods to register with the MQ2DotNetCoreLoader.dll
+#pragma warning disable RCS1057 // Add empty line between declarations.
 		private static readonly fMQGroundItem _handleAddGroundItem = HandleAddGroundItem;
 		private static void HandleAddGroundItem(IntPtr newGroundItemPointer)
 		{
 			try
 			{
 #if DEBUG
-				FileLoggingHelper.LogTrace("Method was called");
+				_logger?.LogTracePrefixed("Method was called");
 #endif
-				var newGroundItem = new GroundType(MQ2TypeFactory.RootFactory, newGroundItemPointer);
-
-				SubmoduleRegistry.Instance.ExecuteForEachSubmodule(
-					(submoduleWrapper) => NotifyAddGroundItem(submoduleWrapper, newGroundItem));
+				_submoduleRegistry.ExecuteForEachSubmodule(
+					(submoduleWrapper) => NotifyAddGroundItem(submoduleWrapper, newGroundItemPointer));
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 		}
 
-		private static void NotifyAddGroundItem(SubmoduleProgramWrapper submodule, GroundType newGroundItem)
-			=> submodule.MQ2Dependencies.GetEventRegistry().NotifyAddGroundItem(newGroundItem);
+		private static void NotifyAddGroundItem(SubmoduleProgramWrapper submodule, IntPtr newGroundItemPointer)
+		{
+			var newGroundItem = new GroundType(submodule.MQ2Dependencies.GetTypeFactory(), newGroundItemPointer);
+
+			submodule.MQ2Dependencies.GetEventRegistry().NotifyAddGroundItem(newGroundItem);
+		}
 
 
 
@@ -390,21 +420,23 @@ namespace MQ2DotNetCore
 			try
 			{
 #if DEBUG
-				FileLoggingHelper.LogTrace("Method was called");
+				_logger?.LogTracePrefixed("Method was called");
 #endif
-				var newSpawn = new SpawnType(MQ2TypeFactory.RootFactory, newSpawnPointer);
-
-				SubmoduleRegistry.Instance.ExecuteForEachSubmodule(
-					(submoduleWrapper) => NotifyAddSpawn(submoduleWrapper, newSpawn));
+				_submoduleRegistry.ExecuteForEachSubmodule(
+					(submoduleWrapper) => NotifyAddSpawn(submoduleWrapper, newSpawnPointer));
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 		}
 
-		private static void NotifyAddSpawn(SubmoduleProgramWrapper submodule, SpawnType newSpawn)
-			=> submodule.MQ2Dependencies.GetEventRegistry().NotifyAddSpawn(newSpawn);
+		private static void NotifyAddSpawn(SubmoduleProgramWrapper submodule, IntPtr newSpawnPointer)
+		{
+			var newSpawn = new SpawnType(submodule.MQ2Dependencies.GetTypeFactory(), newSpawnPointer);
+
+			submodule.MQ2Dependencies.GetEventRegistry().NotifyAddSpawn(newSpawn);
+		}
 
 
 
@@ -414,13 +446,13 @@ namespace MQ2DotNetCore
 			try
 			{
 #if DEBUG
-				FileLoggingHelper.LogTrace("Method was called");
+				_logger?.LogTracePrefixed("Method was called");
 #endif
-				SubmoduleRegistry.Instance.ExecuteForEachSubmodule(NotifyBeginZone);
+				_submoduleRegistry.ExecuteForEachSubmodule(NotifyBeginZone);
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 		}
 
@@ -435,13 +467,13 @@ namespace MQ2DotNetCore
 			try
 			{
 #if DEBUG
-				FileLoggingHelper.LogTrace("Method was called");
+				_logger?.LogTracePrefixed("Method was called");
 #endif
-				SubmoduleRegistry.Instance.ExecuteForEachSubmodule(NotifyCleanUI);
+				_submoduleRegistry.ExecuteForEachSubmodule(NotifyCleanUI);
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 		}
 
@@ -462,7 +494,7 @@ namespace MQ2DotNetCore
 
 				if ((drawHudCount % 10_000) == 0)
 				{
-					FileLoggingHelper.LogTrace($"HandleDrawHUD fired. [DrawHUDCount: {drawHudCount}]");
+					_logger?.LogTracePrefixed($"HandleDrawHUD fired. [DrawHUDCount: {drawHudCount}]");
 				}
 
 				if (drawHudCount > 1_000_000)
@@ -471,11 +503,11 @@ namespace MQ2DotNetCore
 				}
 #endif
 
-				SubmoduleRegistry.Instance.ExecuteForEachSubmodule(NotifyDrawHUD);
+				_submoduleRegistry.ExecuteForEachSubmodule(NotifyDrawHUD);
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 		}
 
@@ -490,14 +522,14 @@ namespace MQ2DotNetCore
 			try
 			{
 #if DEBUG
-				FileLoggingHelper.LogTrace("Method was called");
+				_logger?.LogTracePrefixed("Method was called");
 #endif
 
-				SubmoduleRegistry.Instance.ExecuteForEachSubmodule(NotifyEndZone);
+				_submoduleRegistry.ExecuteForEachSubmodule(NotifyEndZone);
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 		}
 
@@ -512,16 +544,16 @@ namespace MQ2DotNetCore
 			try
 			{
 #if DEBUG
-				FileLoggingHelper.LogTrace("Method was called");
+				_logger?.LogTracePrefixed("Method was called");
 #endif
 				var chatLineEventArgs = new ChatLineEventArgs(chatLine, color);
 
-				SubmoduleRegistry.Instance.ExecuteForEachSubmodule(
+				_submoduleRegistry.ExecuteForEachSubmodule(
 					(submoduleWrapper) => NotifyIncomingChat(submoduleWrapper, chatLineEventArgs));
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 
 			}
 
@@ -536,7 +568,7 @@ namespace MQ2DotNetCore
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 
 			try
@@ -545,7 +577,7 @@ namespace MQ2DotNetCore
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 		}
 
@@ -563,7 +595,7 @@ namespace MQ2DotNetCore
 
 				if ((pulseCount % 250) == 0)
 				{
-					var removedProgramCount = SubmoduleRegistry.Instance.ProcessRunningProgramTasks();
+					var removedProgramCount = _submoduleRegistry.ProcessRunningProgramTasks();
 				}
 
 				if ((pulseCount % 350) == 0)
@@ -574,18 +606,18 @@ namespace MQ2DotNetCore
 #if DEBUG
 				if ((pulseCount % 10_000) == 0)
 				{
-					FileLoggingHelper.LogDebug($"(Pulse {pulseCount}) GC.GetTotalMemory(): {GC.GetTotalMemory(true)}");
+					_logger?.LogDebugPrefixed($"(Pulse {pulseCount}) GC.GetTotalMemory(): {GC.GetTotalMemory(true)}");
 				}
 				else if ((pulseCount % 1_000) == 0)
 				{
-					FileLoggingHelper.LogDebug($"(Pulse {pulseCount}) GC.GetTotalMemory(): {GC.GetTotalMemory(false)}");
+					_logger?.LogDebugPrefixed($"(Pulse {pulseCount}) GC.GetTotalMemory(): {GC.GetTotalMemory(false)}");
 				}
 #endif
 
 				if (pulseCount > 1_000_000)
 				{
 #if DEBUG
-					FileLoggingHelper.LogTrace("Resetting pulse count to 1");
+					_logger?.LogTracePrefixed("Resetting pulse count to 1");
 #endif
 
 					Interlocked.Exchange(ref pulseCount, 1);
@@ -593,7 +625,7 @@ namespace MQ2DotNetCore
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 		}
 
@@ -605,13 +637,13 @@ namespace MQ2DotNetCore
 			try
 			{
 #if DEBUG
-				FileLoggingHelper.LogTrace("Method was called");
+				_logger?.LogTracePrefixed("Method was called");
 #endif
-				SubmoduleRegistry.Instance.ExecuteForEachSubmodule(NotifyReloadUI);
+				_submoduleRegistry.ExecuteForEachSubmodule(NotifyReloadUI);
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 		}
 
@@ -626,21 +658,23 @@ namespace MQ2DotNetCore
 			try
 			{
 #if DEBUG
-				FileLoggingHelper.LogTrace("Method was called");
+				_logger?.LogTracePrefixed("Method was called");
 #endif
-				var removedGroundItem = new GroundType(MQ2TypeFactory.RootFactory, removedGroundItemPointer);
-
-				SubmoduleRegistry.Instance.ExecuteForEachSubmodule(
-					(submoduleWrapper) => NotifyRemoveGroundItem(submoduleWrapper, removedGroundItem));
+				_submoduleRegistry.ExecuteForEachSubmodule(
+					(submoduleWrapper) => NotifyRemoveGroundItem(submoduleWrapper, removedGroundItemPointer));
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 		}
 
-		private static void NotifyRemoveGroundItem(SubmoduleProgramWrapper submodule, GroundType removedGroundItem)
-			=> submodule.MQ2Dependencies.GetEventRegistry().NotifyRemoveGroundItem(removedGroundItem);
+		private static void NotifyRemoveGroundItem(SubmoduleProgramWrapper submodule, IntPtr removedGroundItemPointer)
+		{
+			var removedGroundItem = new GroundType(submodule.MQ2Dependencies.GetTypeFactory(), removedGroundItemPointer);
+
+			submodule.MQ2Dependencies.GetEventRegistry().NotifyRemoveGroundItem(removedGroundItem);
+		}
 
 
 
@@ -650,21 +684,24 @@ namespace MQ2DotNetCore
 			try
 			{
 #if DEBUG
-				FileLoggingHelper.LogTrace("Method was called");
+				_logger?.LogTracePrefixed("Method was called");
 #endif
-				var removedSpawn = new SpawnType(MQ2TypeFactory.RootFactory, removedSpawnPointer);
 
-				SubmoduleRegistry.Instance.ExecuteForEachSubmodule(
-					(submoduleWrapper) => NotifyRemoveSpawn(submoduleWrapper, removedSpawn));
+				_submoduleRegistry.ExecuteForEachSubmodule(
+					(submoduleWrapper) => NotifyRemoveSpawn(submoduleWrapper, removedSpawnPointer));
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 		}
 
-		private static void NotifyRemoveSpawn(SubmoduleProgramWrapper submodule, SpawnType removedSpawn)
-			=> submodule.MQ2Dependencies.GetEventRegistry().NotifyRemoveSpawn(removedSpawn);
+		private static void NotifyRemoveSpawn(SubmoduleProgramWrapper submodule, IntPtr removedSpawnPointer)
+		{
+			var removedSpawn = new SpawnType(submodule.MQ2Dependencies.GetTypeFactory(), removedSpawnPointer);
+
+			submodule.MQ2Dependencies.GetEventRegistry().NotifyRemoveSpawn(removedSpawn);
+		}
 
 
 
@@ -675,18 +712,18 @@ namespace MQ2DotNetCore
 			try
 			{
 #if DEBUG
-				FileLoggingHelper.LogTrace("Method was called");
+				_logger?.LogTracePrefixed("Method was called");
 #endif
 				var gameState = Enum.IsDefined(typeof(GameState), gameStateValue)
 					? (GameState)gameStateValue
 					: GameState.Unknown;
 
-				SubmoduleRegistry.Instance.ExecuteForEachSubmodule(
+				_submoduleRegistry.ExecuteForEachSubmodule(
 					(submodule) => NotifySetGameState(submodule, gameState));
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 		}
 
@@ -701,17 +738,17 @@ namespace MQ2DotNetCore
 			try
 			{
 				// Keep Initialize and Shutdown at LogInformation(..) level
-				FileLoggingHelper.LogInformation("Method was called!");
+				_logger?.LogInformationPrefixed("Method was called!");
 
-				FileLoggingHelper.LogInformation($"Disposing of the {nameof(SubmoduleRegistry)}...");
-				CleanupHelper.TryDispose(SubmoduleRegistry.Instance);
+				_logger?.LogInformationPrefixed($"Disposing of the {nameof(SubmoduleRegistry)}...");
+				CleanupHelper.TryDispose(_submoduleRegistry, _logger);
 
-				FileLoggingHelper.LogInformation($"Disposing of the {nameof(MQ2CommandRegistry)}...");
-				CleanupHelper.TryDispose(_mq2CommandRegistry);
+				_logger?.LogInformationPrefixed($"Disposing of the {nameof(MQ2CommandRegistry)}...");
+				CleanupHelper.TryDispose(_mq2CommandRegistry, _logger);
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 		}
 
@@ -723,16 +760,16 @@ namespace MQ2DotNetCore
 			try
 			{
 #if DEBUG
-				FileLoggingHelper.LogTrace("Method was called");
+				_logger?.LogTracePrefixed("Method was called");
 #endif
 				var chatLineEventArgs = new ChatLineEventArgs(chatLine, color, filter);
 
-				SubmoduleRegistry.Instance.ExecuteForEachSubmodule(
+				_submoduleRegistry.ExecuteForEachSubmodule(
 					(submodule) => NotifyWriteChatColor(submodule, chatLineEventArgs));
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 
 			return 0;
@@ -746,7 +783,7 @@ namespace MQ2DotNetCore
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 
 			try
@@ -755,7 +792,7 @@ namespace MQ2DotNetCore
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 		}
 
@@ -767,17 +804,18 @@ namespace MQ2DotNetCore
 			try
 			{
 #if DEBUG
-				FileLoggingHelper.LogTrace("Method was called");
+				_logger?.LogTracePrefixed("Method was called");
 #endif
-				SubmoduleRegistry.Instance.ExecuteForEachSubmodule(NotifyZoned);
+				_submoduleRegistry.ExecuteForEachSubmodule(NotifyZoned);
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 		}
 
 		private static void NotifyZoned(SubmoduleProgramWrapper submodule)
 			=> submodule.MQ2Dependencies.GetEventRegistry().NotifyZoned(EventArgs.Empty);
+#pragma warning restore RCS1057 // Add empty line between declarations.
 	}
 }

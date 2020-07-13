@@ -1,4 +1,5 @@
-﻿using MQ2DotNetCore.Logging;
+﻿using Microsoft.Extensions.Logging;
+using MQ2DotNetCore.Logging;
 using System;
 using System.Runtime.Loader;
 using System.Threading;
@@ -28,7 +29,7 @@ namespace MQ2DotNetCore.Base
 				|| task.Status == TaskStatus.Faulted;
 		}
 
-		public static bool TryCancel(CancellationTokenSource? cancellationTokenSource)
+		public static bool TryCancel(CancellationTokenSource? cancellationTokenSource, ILogger? logger)
 		{
 			try
 			{
@@ -37,12 +38,12 @@ namespace MQ2DotNetCore.Base
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError($"Unexpected exception while trying signal the cancellation token source!\n\n{exc}\n");
+				logger?.LogErrorPrefixed($"Unexpected exception while trying signal the cancellation token source!\n\n{exc}\n");
 				return false;
 			}
 		}
 
-		public static bool TryDispose(IDisposable? disposable)
+		public static bool TryDispose(IDisposable? disposable, ILogger? logger)
 		{
 			try
 			{
@@ -51,12 +52,12 @@ namespace MQ2DotNetCore.Base
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError($"Unexpected exception while trying to dispose the object of type {disposable?.GetType().FullName ?? "(NULL)"}!\n\n{exc}\n");
+				logger?.LogErrorPrefixed($"Unexpected exception while trying to dispose the object of type {disposable?.GetType().FullName ?? "(NULL)"}!\n\n{exc}\n");
 				return false;
 			}
 		}
 
-		public static bool TryUnload(AssemblyLoadContext? assemblyLoadContext)
+		public static bool TryUnload(AssemblyLoadContext? assemblyLoadContext, ILogger? logger)
 		{
 			try
 			{
@@ -65,7 +66,7 @@ namespace MQ2DotNetCore.Base
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError($"Unexpected exception while trying unload the assembly load context ({assemblyLoadContext?.Name})!\n\n{exc}\n");
+				logger?.LogErrorPrefixed($"Unexpected exception while trying unload the assembly load context ({assemblyLoadContext?.Name})!\n\n{exc}\n");
 				return false;
 			}
 		}

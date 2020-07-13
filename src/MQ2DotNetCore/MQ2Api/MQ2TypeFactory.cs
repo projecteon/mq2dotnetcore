@@ -1,4 +1,5 @@
-﻿using MQ2DotNetCore.Base;
+﻿using Microsoft.Extensions.Logging;
+using MQ2DotNetCore.Base;
 using MQ2DotNetCore.Interop;
 using MQ2DotNetCore.Logging;
 using System;
@@ -15,14 +16,6 @@ namespace MQ2DotNetCore.MQ2Api
 	/// </summary>
 	public class MQ2TypeFactory : IDisposable
 	{
-		internal static readonly MQ2TypeFactory RootFactory;
-
-		static MQ2TypeFactory()
-		{
-			RootFactory = new MQ2TypeFactory();
-			RootFactory.RegisterTypesInAssembly(MQ2DotNetCoreAssemblyInformation.MQ2DotNetCoreAssembly);
-		}
-
 		private readonly ConcurrentDictionary<IntPtr, Func<MQ2TypeFactory, MQ2TypeVar, MQ2DataType>> _constructorsDictionary =
 			new ConcurrentDictionary<IntPtr, Func<MQ2TypeFactory, MQ2TypeVar, MQ2DataType>>();
 
@@ -34,9 +27,15 @@ namespace MQ2DotNetCore.MQ2Api
 
 		private readonly MQ2TypeFactory? _parentFactory;
 
-		private MQ2TypeFactory()
+		internal MQ2TypeFactory(
+			ILogger<MQ2TypeFactory>? logger,
+			MQ2NativeHelper mq2NativeHelper
+		)
 		{
 			_parentFactory = null;
+
+			Logger = logger;
+			MQ2NativeHelper = mq2NativeHelper ?? throw new ArgumentNullException(nameof(mq2NativeHelper));
 		}
 
 		/// <summary>
@@ -44,8 +43,17 @@ namespace MQ2DotNetCore.MQ2Api
 		/// </summary>
 		public MQ2TypeFactory(MQ2TypeFactory parentFactory)
 		{
-			_parentFactory = parentFactory;
+			_parentFactory = parentFactory ?? throw new ArgumentNullException(nameof(parentFactory));
+
+			Logger = parentFactory.Logger;
+
+			MQ2NativeHelper = parentFactory.MQ2NativeHelper;
 		}
+
+
+		public ILogger<MQ2TypeFactory>? Logger;
+
+		public MQ2NativeHelper MQ2NativeHelper { get; }
 
 		public static bool CanSkipProgressing(Assembly assemblyToCheck)
 		{
@@ -75,7 +83,7 @@ namespace MQ2DotNetCore.MQ2Api
 			CleanupHelper.DisposedCheck(_isDisposed, nameof(MQ2TypeFactory));
 
 #if DEBUG
-			FileLoggingHelper.LogTrace($"Attempting to construct instance of: {typeVar}");
+			Logger?.LogTracePrefixed($"Attempting to construct instance of: {typeVar}");
 #endif
 
 			if (_parentFactory != null
@@ -90,7 +98,7 @@ namespace MQ2DotNetCore.MQ2Api
 				return registeredConstructor(this, typeVar);
 			}
 
-			FileLoggingHelper.LogWarning($"Did not find registered constructor for: {typeVar}");
+			Logger?.LogWarningPrefixed($"Did not find registered constructor for: {typeVar}");
 			return new MQ2DataType(this, typeVar);
 		}
 
@@ -100,16 +108,16 @@ namespace MQ2DotNetCore.MQ2Api
 
 			if (assemblyToRegisterTypesFor == null)
 			{
-				FileLoggingHelper.LogWarning($"Assembly to register types for is null");
+				Logger?.LogWarningPrefixed($"Assembly to register types for is null");
 				return;
 			}
 
-			FileLoggingHelper.LogDebug($"Registering types in assembly: {assemblyToRegisterTypesFor.FullName}");
+			Logger?.LogDebugPrefixed($"Registering types in assembly: {assemblyToRegisterTypesFor.FullName}");
 
 			if (_registeredAssemblies.Contains(assemblyToRegisterTypesFor)
 				|| _parentFactory?._registeredAssemblies.Contains(assemblyToRegisterTypesFor) == true)
 			{
-				FileLoggingHelper.LogDebug($"Assembly is already registered: {assemblyToRegisterTypesFor.FullName}");
+				Logger?.LogDebugPrefixed($"Assembly is already registered: {assemblyToRegisterTypesFor.FullName}");
 				return;
 			}
 
@@ -152,7 +160,7 @@ namespace MQ2DotNetCore.MQ2Api
 					// It needs a public constructor with a MQ2TypeFacotry and a MQ2TypeVar parameter
 					var constructorForType = type.GetConstructor(constructorTypeArguments);
 
-					
+
 					if (constructorForType == null
 						&& assemblyToRegisterTypesFor == MQ2DotNetCoreAssemblyInformation.MQ2DotNetCoreAssembly)
 					{
@@ -183,7 +191,7 @@ namespace MQ2DotNetCore.MQ2Api
 						Expression.New(constructorForType, typeFactoryParam, typeVarParam), typeFactoryParam, typeVarParam);
 
 #if DEBUG
-					FileLoggingHelper.LogTrace($"Registering constructor for type: {mq2TypeAttribute.TypeName}");
+					Logger?.LogTracePrefixed($"Registering constructor for type: {mq2TypeAttribute.TypeName}");
 #endif
 
 					Register(mq2TypeAttribute.TypeName, constructor.Compile());
@@ -191,8 +199,8 @@ namespace MQ2DotNetCore.MQ2Api
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError("Error finding types in assembly: " + assemblyToRegisterTypesFor.GetName());
-				FileLoggingHelper.LogError(exc);
+				Logger?.LogErrorPrefixed("Error finding types in assembly: " + assemblyToRegisterTypesFor.GetName());
+				Logger?.LogErrorPrefixed(exc);
 			}
 		}
 
@@ -216,7 +224,7 @@ namespace MQ2DotNetCore.MQ2Api
 			}
 
 #if DEBUG
-			FileLoggingHelper.LogTrace($"Adding constructor to dictionary for data type pointer: {dataType}");
+			Logger?.LogTracePrefixed($"Adding constructor to dictionary for data type pointer: {dataType}");
 #endif
 
 			if (!_constructorsDictionary.TryAdd(dataType, constructor))

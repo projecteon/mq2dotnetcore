@@ -1,3 +1,20 @@
 {
-  "LogLevel": "Debug"
+	"FileVersion": "1.0.0",
+
+	"IsConsoleLoggingEnabled": false,
+	"IsDebugLoggingEnabled": false,
+	"IsFileLoggingEnabled": true,
+	"IsMQ2LoggingEnabled": false,
+
+	"Logging": {
+		"LogLevel": {
+			"Default": "Warning"
+		},
+		"File": {
+			"IncludeScopes": true,
+			"LogLevel": {
+				"Default": "Debug"
+			}
+		}
+	}
 }
