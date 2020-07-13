@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using MQ2DotNetCore.Logging;
 using System;
 using System.IO;
 using System.Threading;
@@ -28,8 +29,8 @@ namespace MQ2DotNetCore.Base
 			var isAnyLoggingProviderEnabled =
 				mq2DotNetCoreOptions.IsConsoleLoggingEnabled
 				|| mq2DotNetCoreOptions.IsDebugLoggingEnabled
-				|| mq2DotNetCoreOptions.IsFileLoggingEnabled;
-			//|| mq2DotNetCoreOptions.IsMQ2LoggingEnabled;
+				|| mq2DotNetCoreOptions.IsFileLoggingEnabled
+				|| mq2DotNetCoreOptions.IsMQ2LoggingEnabled;
 
 			ILoggerFactory? loggerFactory = null;
 			if (isAnyLoggingProviderEnabled)
@@ -62,7 +63,7 @@ namespace MQ2DotNetCore.Base
 
 					if (mq2DotNetCoreOptions.IsMQ2LoggingEnabled)
 					{
-						// TODO: Create an MQ2 logging provider that writes to the MQ2 chat window
+						loggingBuilder.AddMQ2();
 					}
 				});
 			}

@@ -12,7 +12,7 @@ namespace MQ2DotNetCore.Logging
 			LoggerMessage.Define<DateTime, int, string, string>(
 				LogLevel.Critical,
 				LoggingHelper.DefaultEventId,
-				"[{timestamp} ({managedThreadId}] (Critical)  {callSite}]  {message}"
+				"[{timestamp} ({managedThreadId})] (Critical)  {callSite}]  {message}"
 			);
 
 		public static void LogCriticalPrefixed(this ILogger logger, string message, [CallerFilePath] string? callerFilePath = null, [CallerMemberName] string? callerMemberName = null)
@@ -64,7 +64,7 @@ namespace MQ2DotNetCore.Logging
 			LoggerMessage.Define<DateTime, int, string, string>(
 				LogLevel.Debug,
 				LoggingHelper.DefaultEventId,
-				"[{timestamp} ({managedThreadId}] (Debug)  {callSite}]  {message}"
+				"[{timestamp} ({managedThreadId})] (Debug)  {callSite}]  {message}"
 			);
 
 		public static void LogDebugPrefixed(this ILogger logger, string message, [CallerFilePath] string? callerFilePath = null, [CallerMemberName] string? callerMemberName = null)
@@ -86,7 +86,7 @@ namespace MQ2DotNetCore.Logging
 			LoggerMessage.Define<DateTime, int, string, string>(
 				LogLevel.Error,
 				LoggingHelper.DefaultEventId,
-				"[{timestamp} ({managedThreadId}] (Error)  {callSite}]  {message}"
+				"[{timestamp} ({managedThreadId})] (Error)  {callSite}]  {message}"
 			);
 
 		public static void LogErrorPrefixed(this ILogger logger, string message, [CallerFilePath] string? callerFilePath = null, [CallerMemberName] string? callerMemberName = null)
@@ -138,7 +138,7 @@ namespace MQ2DotNetCore.Logging
 			LoggerMessage.Define<DateTime, int, string, string>(
 				LogLevel.Information,
 				LoggingHelper.DefaultEventId,
-				"[{timestamp} ({managedThreadId}] (Information)  {callSite}]  {message}"
+				"[{timestamp} ({managedThreadId})] (Information)  {callSite}]  {message}"
 			);
 
 		public static void LogInformationPrefixed(this ILogger logger, string message, [CallerFilePath] string? callerFilePath = null, [CallerMemberName] string? callerMemberName = null)
@@ -160,7 +160,7 @@ namespace MQ2DotNetCore.Logging
 			LoggerMessage.Define<DateTime, int, string, string>(
 				LogLevel.Trace,
 				LoggingHelper.DefaultEventId,
-				"[{timestamp} ({managedThreadId}] (Trace)  {callSite}]  {message}"
+				"[{timestamp} ({managedThreadId})] (Trace)  {callSite}]  {message}"
 			);
 
 		public static void LogTracePrefixed(this ILogger logger, string message, [CallerFilePath] string? callerFilePath = null, [CallerMemberName] string? callerMemberName = null)
@@ -197,7 +197,7 @@ namespace MQ2DotNetCore.Logging
 			LoggerMessage.Define<DateTime, int, string, string>(
 				LogLevel.Warning,
 				LoggingHelper.DefaultEventId,
-				"[{timestamp} ({managedThreadId}] (Warning)  {callSite}]  {message}"
+				"[{timestamp} ({managedThreadId})] (Warning)  {callSite}]  {message}"
 			);
 
 		public static void LogWarningPrefixed(this ILogger logger, string message, [CallerFilePath] string? callerFilePath = null, [CallerMemberName] string? callerMemberName = null)
