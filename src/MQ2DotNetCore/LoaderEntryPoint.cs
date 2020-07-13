@@ -5,6 +5,7 @@ using MQ2DotNetCore.Logging;
 using MQ2DotNetCore.MQ2Api;
 using MQ2DotNetCore.MQ2Api.DataTypes;
 using System;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -93,6 +94,24 @@ namespace MQ2DotNetCore
 				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(_loaderLibraryHandle, "g_pfBeginZone"), Marshal.GetFunctionPointerForDelegate(_handleBeginZone));
 				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(_loaderLibraryHandle, "g_pfEndZone"), Marshal.GetFunctionPointerForDelegate(_handleEndZone));
 				Marshal.WriteIntPtr(Kernel32.NativeMethods.GetProcAddress(_loaderLibraryHandle, "g_pfOnZoned"), Marshal.GetFunctionPointerForDelegate(_handleZoned));
+
+				var missingDependencyPaths =
+					Directory.EnumerateFiles(
+						MQ2DotNetCoreAssemblyInformation.AssemblyDirectory,
+						"*.dll",
+						SearchOption.TopDirectoryOnly
+					)
+					.Where(path =>!path.EndsWith("JetBrains.Annotations.dll", StringComparison.OrdinalIgnoreCase)
+						&& !path.EndsWith("MQ2DotNetCore.dll", StringComparison.OrdinalIgnoreCase)
+						&& !SubmoduleAssemblyLoadContext.MQ2DotNetCoreDependencies.Any(dependencyAssembly => path.Equals(dependencyAssembly.Location, StringComparison.OrdinalIgnoreCase))
+					)
+					.ToList();
+
+				if (missingDependencyPaths.Count > 0)
+				{
+					_logger?.LogErrorPrefixed($"{nameof(SubmoduleAssemblyLoadContext)}.{nameof(SubmoduleAssemblyLoadContext.MQ2DotNetCoreDependencies)} is missing entries for the following dlls: \n{string.Join("\n", missingDependencyPaths)}\n");
+				}
+
 
 				_logger?.LogDebugPrefixed($"Done registering delegates to the loader dll's exported function pointer addresses!");
 

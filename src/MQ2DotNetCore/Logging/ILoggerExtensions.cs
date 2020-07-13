@@ -35,7 +35,7 @@ namespace MQ2DotNetCore.Logging
 			try
 			{
 				var callSite = StringHelper.GetCallSiteString(callerFilePath, callerMemberName);
-				_logCriticalPrefixed(logger, DateTime.Now, Thread.CurrentThread.ManagedThreadId, callSite, $"An exception occurred:\n\n{exceptionToLog}\n", exceptionToLog);
+				_logCriticalPrefixed(logger, DateTime.Now, Thread.CurrentThread.ManagedThreadId, callSite, "An exception occurred:\n", exceptionToLog);
 			}
 #pragma warning disable RCS1075 // Avoid empty catch clause that catches System.Exception.
 			catch (Exception)
@@ -109,7 +109,7 @@ namespace MQ2DotNetCore.Logging
 			try
 			{
 				var callSite = StringHelper.GetCallSiteString(callerFilePath, callerMemberName);
-				_logErrorPrefixed(logger, DateTime.Now, Thread.CurrentThread.ManagedThreadId, callSite, $"An exception occurred:\n\n{exceptionToLog}\n", exceptionToLog);
+				_logErrorPrefixed(logger, DateTime.Now, Thread.CurrentThread.ManagedThreadId, callSite, "An exception occurred:\n", exceptionToLog);
 			}
 #pragma warning disable RCS1075 // Avoid empty catch clause that catches System.Exception.
 			catch (Exception)
@@ -183,7 +183,7 @@ namespace MQ2DotNetCore.Logging
 			try
 			{
 				var callSite = StringHelper.GetCallSiteString(callerFilePath, callerMemberName);
-				_logTracePrefixed(logger, DateTime.Now, Thread.CurrentThread.ManagedThreadId, callSite, $"An exception occurred:\n\n{exceptionToLog}\n", exceptionToLog);
+				_logTracePrefixed(logger, DateTime.Now, Thread.CurrentThread.ManagedThreadId, callSite, "An exception occurred:\n", exceptionToLog);
 			}
 #pragma warning disable RCS1075 // Avoid empty catch clause that catches System.Exception.
 			catch (Exception)
@@ -220,7 +220,7 @@ namespace MQ2DotNetCore.Logging
 			try
 			{
 				var callSite = StringHelper.GetCallSiteString(callerFilePath, callerMemberName);
-				_logWarningPrefixed(logger, DateTime.Now, Thread.CurrentThread.ManagedThreadId, callSite, $"An exception occurred:\n\n{exceptionToLog}\n", exceptionToLog);
+				_logWarningPrefixed(logger, DateTime.Now, Thread.CurrentThread.ManagedThreadId, callSite, "An exception occurred:\n", exceptionToLog);
 			}
 #pragma warning disable RCS1075 // Avoid empty catch clause that catches System.Exception.
 			catch (Exception)

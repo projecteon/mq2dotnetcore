@@ -12,16 +12,26 @@ namespace MQ2DotNetCore.Base
 	{
 		internal static readonly Assembly[] MQ2DotNetCoreDependencies = new Assembly[]
 		{
-			typeof(Microsoft.Extensions.Configuration.IConfiguration).Assembly,                        // .Configuration.Abstractions
-			typeof(Microsoft.Extensions.Configuration.ConfigurationBuilder).Assembly,                  // .Configuration
-			typeof(Microsoft.Extensions.Configuration.ConfigurationBinder).Assembly,                   // .Configuration.Binder
-			typeof(Microsoft.Extensions.Configuration.JsonConfigurationExtensions).Assembly,           // .Configuration.Json
-			typeof(Microsoft.Extensions.Logging.ILoggerFactory).Assembly,                              // .Logging.Abstractions
-			typeof(Microsoft.Extensions.Logging.LoggerFactory).Assembly,                               // .Logging
-			typeof(Microsoft.Extensions.Logging.Configuration.LoggerProviderOptions).Assembly,         // .Logging.Configuration
-			typeof(Microsoft.Extensions.Logging.ConsoleLoggerExtensions).Assembly,                     // .Logging.Console
-			typeof(Microsoft.Extensions.Logging.DebugLoggerFactoryExtensions).Assembly,                // .Logging.Debug
-			typeof(Microsoft.Extensions.Logging.FileLoggerFactoryExtensions).Assembly                  // NetEscapades.Extensions.Logging.RollingFile
+			typeof(Microsoft.Extensions.Configuration.IConfiguration).Assembly,							// Microsoft.Extensions.Configuration.Abstractions
+			typeof(Microsoft.Extensions.Configuration.ConfigurationBinder).Assembly,					// Microsoft.Extensions.Configuration.Binder
+			typeof(Microsoft.Extensions.Configuration.ConfigurationBuilder).Assembly,					// Microsoft.Extensions.Configuration
+			typeof(Microsoft.Extensions.Configuration.FileConfigurationExtensions).Assembly,			// Microsoft.Extensions.Configuration.FileExtensions
+			typeof(Microsoft.Extensions.Configuration.JsonConfigurationExtensions).Assembly,			// Microsoft.Extensions.Configuration.Json
+			typeof(Microsoft.Extensions.DependencyInjection.IServiceCollection).Assembly,				// Microsoft.Extensions.DependencyInjection.Abstractions
+			typeof(Microsoft.Extensions.DependencyInjection.ServiceProvider).Assembly,					// Microsoft.Extensions.DependencyInjection
+			typeof(Microsoft.Extensions.FileProviders.IFileProvider).Assembly,							// Microsoft.Extensions.FileProviders.Abstractions
+			typeof(Microsoft.Extensions.FileProviders.PhysicalFileProvider).Assembly,					// Microsoft.Extensions.FileProviders.Physical
+			typeof(Microsoft.Extensions.FileSystemGlobbing.Matcher).Assembly,							// Microsoft.Extensions.FileSystemGlobbing
+			typeof(Microsoft.Extensions.Logging.ILoggerFactory).Assembly,								// Microsoft.Extensions.Logging.Abstractions
+			typeof(Microsoft.Extensions.Logging.LoggerFactory).Assembly,								// Microsoft.Extensions.Logging
+			typeof(Microsoft.Extensions.Logging.Configuration.LoggerProviderOptions).Assembly,			// Microsoft.Extensions.Logging.Configuration
+			typeof(Microsoft.Extensions.Logging.ConsoleLoggerExtensions).Assembly,						// Microsoft.Extensions.Logging.Console
+			typeof(Microsoft.Extensions.Logging.DebugLoggerFactoryExtensions).Assembly,					// Microsoft.Extensions.Logging.Debug
+			typeof(Microsoft.Extensions.Options.ConfigurationChangeTokenSource<>).Assembly,				// Microsoft.Extensions.Options.ConfigurationExtensions
+			typeof(Microsoft.Extensions.Options.IOptions<>).Assembly,									// Microsoft.Extensions.Options
+			typeof(Microsoft.Extensions.Primitives.IChangeToken).Assembly,								// Microsoft.Extensions.Primitives
+			typeof(Microsoft.Extensions.Logging.FileLoggerFactoryExtensions).Assembly,					// NetEscapades.Extensions.Logging.RollingFile
+			typeof(Newtonsoft.Json.JsonConverter).Assembly												// Newtonsoft.Json
 		};
 
 		private readonly ILogger<SubmoduleAssemblyLoadContext>? _logger;
@@ -125,7 +135,17 @@ namespace MQ2DotNetCore.Base
 				}
 			}
 
-			_logger?.LogWarningPrefixed($"[{Name}]  Failed to locate or load assembly: {assemblyName}");
+
+			try
+			{
+				// Throw an exception so we can get a stack trace for where the load was triggered
+				throw new InvalidOperationException();
+			}
+			catch (InvalidOperationException failedToLoadException)
+			{
+				_logger?.LogWarningPrefixed($"[{Name}]  Failed to locate or load assembly: {assemblyName}\n\n{failedToLoadException.StackTrace}\n");
+			}
+
 			return null;
 		}
 

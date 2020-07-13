@@ -52,6 +52,8 @@ namespace MQ2DotNetCore.Base
 				return;
 			}
 
+			_logger?.LogDebugPrefixed($"Disposing {Name} {nameof(SubmoduleProgramWrapper)} instance");
+
 			CleanupHelper.TryCancel(CancellationTokenSource, _logger);
 			CleanupHelper.TryDispose(CancellationTokenSource, _logger);
 			CleanupHelper.TryDispose(Task, _logger);

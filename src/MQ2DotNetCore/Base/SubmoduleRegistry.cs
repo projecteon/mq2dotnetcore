@@ -163,21 +163,26 @@ namespace MQ2DotNetCore.Base
 						var isProgramTaskStopped = CleanupHelper.IsTaskStopped(submoduleProgramWrapper.Task);
 						if (isProgramTaskStopped || submoduleProgramWrapper.HasCancelled)
 						{
-							if (isProgramTaskStopped)
+							if (!isProgramTaskStopped)
 							{
 								_logger?.LogWarningPrefixed($"{programName} has been cancelled but it's Task has not stopped! Attempting to forcibly cancel and unload...");
 							}
+
+							_logger?.LogTracePrefixed($"Attempting to dispose submodule program wrapper with stopped task: {submoduleProgramWrapper.Name}");
+
+							if (!CleanupHelper.TryDispose(submoduleProgramWrapper, _logger))
+							{
+								_logger?.LogWarningPrefixed($"Failed to dispose of program: {programName}");
+								continue;
+							}
+
+							_logger?.LogTracePrefixed($"Attempting to remove submodule program wrapper from programs dictionary: {submoduleProgramWrapper.Name}");
 
 							if (!_programsDictionary.TryRemove(programName, out _))
 							{
 								_logger?.LogWarningPrefixed($"Failed to remove the completed program wrapper for name: {programName}");
 							}
 
-#if DEBUG
-							_logger?.LogTracePrefixed($"Attempting to dispose submodule program wrapper with stopped task: {submoduleProgramWrapper}");
-#endif
-
-							CleanupHelper.TryDispose(submoduleProgramWrapper, _logger);
 							++removedTaskCount;
 							continue;
 						}
@@ -244,12 +249,12 @@ namespace MQ2DotNetCore.Base
 
 					assemblyLoadContext = new SubmoduleAssemblyLoadContext(_submoduleAssemblyLoadContextLogger, submoduleProgramName, submoduleFilePath);
 
-					_logger?.LogDebug($"Loading submodule assembly from: {submoduleFilePath}");
+					_logger?.LogDebugPrefixed($"Loading submodule assembly from: {submoduleFilePath}");
 
 					var submoduleAssembly = assemblyLoadContext.LoadFromAssemblyPath(submoduleFilePath);
 					//TryLoadDefaultAssemblies(assemblyLoadContext, submoduleProgramName);
 
-					_logger?.LogDebug("Looking for IMQ2Program implementation types in loaded submodule assembly");
+					_logger?.LogDebugPrefixed("Looking for IMQ2Program implementation types in loaded submodule assembly");
 
 					var submoduleTypes = submoduleAssembly.GetTypes();
 					var submoduleProgramTypes = submoduleTypes
@@ -400,61 +405,6 @@ namespace MQ2DotNetCore.Base
 				return false;
 			}
 		}
-
-
-		//		internal void TryLoadDefaultAssemblies(SubmoduleAssemblyLoadContext submoduleAssemblyLoadContext, string submoduleProgramName)
-		//		{
-		//#if DEBUg
-		//			var defaultAssembliesBuilder = new StringBuilder("AssemblyLoadContext.Default.Assemblies: \n");
-		//			foreach (var nextAssembly in AssemblyLoadContext.Default.Assemblies)
-		//			{
-		//				defaultAssembliesBuilder.Append('\n');
-		//				defaultAssembliesBuilder.Append(nextAssembly.GetName().ToString());
-
-		//				try
-		//				{
-		//					defaultAssembliesBuilder.Append("    [Location: ").Append(nextAssembly.Location).Append(']');
-		//				}
-		//#pragma warning disable RCS1075 // Avoid empty catch clause that catches System.Exception.
-		//				catch (Exception)
-		//#pragma warning restore RCS1075 // Avoid empty catch clause that catches System.Exception.
-		//				{
-		//					// Can ignore
-		//				}
-		//			}
-
-		//			defaultAssembliesBuilder.Append('\n');
-
-		//			_logger?.LogTracePrefixed(defaultAssembliesBuilder.ToString());
-		//#endif
-
-
-		//			foreach (var defaultAssemblyPath in _defaultAssemblies)
-		//			{
-		//				if (string.IsNullOrWhiteSpace(defaultAssemblyPath))
-		//				{
-		//					continue;
-		//				}
-
-		//				var defaultAssemblyName = Path.GetFileNameWithoutExtension(defaultAssemblyPath);
-		//				if (submoduleAssemblyLoadContext.Assemblies
-		//					.Any(loadedAssembly => loadedAssembly.FullName?.Contains(defaultAssemblyName, StringComparison.OrdinalIgnoreCase) == true))
-		//				{
-		//					_logger.LogDebug($"{defaultAssemblyName} already loaded, skipping");
-		//					continue;
-		//				}
-
-		//				try
-		//				{
-		//					_logger?.LogDebugPrefixed($"Attempting to load default assembly {defaultAssemblyPath} into the {nameof(SubmoduleAssemblyLoadContext)} for {submoduleProgramName}");
-		//					submoduleAssemblyLoadContext.LoadFromAssemblyName
-		//				}
-		//				catch (Exception exc)
-		//				{
-		//					_logger?.LogWarningPrefixed(exc);
-		//				}
-		//			}
-		//		}
 
 		internal async Task<TaskStatus?> TryStopProgramAsync(string submoduleProgramName)
 		{
