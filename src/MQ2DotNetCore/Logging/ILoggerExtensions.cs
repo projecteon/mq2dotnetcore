@@ -178,6 +178,21 @@ namespace MQ2DotNetCore.Logging
 			}
 		}
 
+		public static void LogTracePrefixed(this ILogger logger, Exception exceptionToLog, [CallerFilePath] string? callerFilePath = null, [CallerMemberName] string? callerMemberName = null)
+		{
+			try
+			{
+				var callSite = StringHelper.GetCallSiteString(callerFilePath, callerMemberName);
+				_logTracePrefixed(logger, DateTime.Now, Thread.CurrentThread.ManagedThreadId, callSite, $"An exception occurred:\n\n{exceptionToLog}\n", exceptionToLog);
+			}
+#pragma warning disable RCS1075 // Avoid empty catch clause that catches System.Exception.
+			catch (Exception)
+#pragma warning restore RCS1075 // Avoid empty catch clause that catches System.Exception.
+			{
+				// TODO: Anything ?
+			}
+		}
+
 		private static readonly Action<ILogger, DateTime, int, string, string, Exception?> _logWarningPrefixed =
 			LoggerMessage.Define<DateTime, int, string, string>(
 				LogLevel.Warning,
