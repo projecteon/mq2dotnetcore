@@ -385,6 +385,17 @@ dotnet_diagnostic.CS8669.severity    = error
 dotnet_diagnostic.CS8670.severity    = error
 
 
+########
+# Roslynator.Analyzers Setup
+########
+# Rule: (RCS1036) Avoid empty lines. Reason: I depend on lots of whitespace to grok my code easily.
+dotnet_diagnostic.RCS1036.severity    = none
+
+# Rule: (RCS1090) Call ConfigureAwait(false). Reason: We need to make sure the continuations rejoin/run on the MQ2SynchronizationContext.
+dotnet_diagnostic.RCS1090.severity    = none
+
+
+
 ###
 # xUnit Configurations
 ###

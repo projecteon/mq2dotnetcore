@@ -9,9 +9,12 @@ namespace MQ2DotNetCore.MQ2Api
 	/// </summary>
 	public sealed class MQ2
 	{
-		internal static readonly MQ2 Instance = new MQ2();
+		private readonly MQ2NativeHelper _mq2NativeHelper;
 
-		private MQ2() { }
+		internal MQ2(MQ2NativeHelper mq2NativeHelper)
+		{
+			_mq2NativeHelper = mq2NativeHelper ?? throw new ArgumentNullException(nameof(mq2NativeHelper));
+		}
 
 		/// <summary>
 		/// Uses MQ2's parser to evaluate a formula
@@ -41,7 +44,7 @@ namespace MQ2DotNetCore.MQ2Api
 		/// <param name="command">Command to execute</param>
 		public void DoCommand(string command)
 		{
-			var characterSpawnIntPointer = MQ2NativeHelper.GetCharacterSpawnIntPointer();
+			var characterSpawnIntPointer = _mq2NativeHelper.GetCharacterSpawnIntPointer();
 			if (characterSpawnIntPointer == IntPtr.Zero)
 			{
 				return;
@@ -128,64 +131,64 @@ namespace MQ2DotNetCore.MQ2Api
 
 		// TODO: Add an MQ2ColorHelper with methods to wrap text strings up with the control characters
 		// for colors...
-		internal static void WriteChatGeneralError(string text)
+		internal void WriteChatGeneralError(string text)
 		{
-			Instance.WriteChat($"\ag[.NET] \arError: \aw{text}");
+			WriteChat($"\ag[.NET] \arError: \aw{text}");
 		}
 
-		internal static void WriteChatGeneralWarning(string text)
+		internal void WriteChatGeneralWarning(string text)
 		{
-			Instance.WriteChat($"\ag[.NET] \ayWarning: \aw{text}");
+			WriteChat($"\ag[.NET] \ayWarning: \aw{text}");
 		}
 
-		internal static void WriteChatGeneral(string text)
+		internal void WriteChatGeneral(string text)
 		{
-			Instance.WriteChat($"\ag[.NET] \aw{text}");
+			WriteChat($"\ag[.NET] \aw{text}");
 		}
 
-		internal static void WriteChatPluginError(string text)
+		internal void WriteChatPluginError(string text)
 		{
-			Instance.WriteChat($"\ag[.NET Plugin] \arError: \aw{text}");
+			WriteChat($"\ag[.NET Plugin] \arError: \aw{text}");
 		}
 
-		internal static void WriteChatPluginWarning(string text)
+		internal void WriteChatPluginWarning(string text)
 		{
-			Instance.WriteChat($"\ag[.NET Plugin] \ayWarning: \aw{text}");
+			WriteChat($"\ag[.NET Plugin] \ayWarning: \aw{text}");
 		}
 
-		internal static void WriteChatPlugin(string text)
+		internal void WriteChatPlugin(string text)
 		{
-			Instance.WriteChat($"\ag[.NET Plugin] \aw{text}");
+			WriteChat($"\ag[.NET Plugin] \aw{text}");
 		}
 
-		internal static void WriteChatProgramError(string text)
+		internal void WriteChatProgramError(string text)
 		{
-			Instance.WriteChat($"\ag[.NET Program] \arError: \aw{text}");
+			WriteChat($"\ag[.NET Program] \arError: \aw{text}");
 		}
 
-		internal static void WriteChatProgramWarning(string text)
+		internal void WriteChatProgramWarning(string text)
 		{
-			Instance.WriteChatSafe($"\ag[.NET Program] \ayWarning: \aw{text}");
+			WriteChatSafe($"\ag[.NET Program] \ayWarning: \aw{text}");
 		}
 
-		internal static void WriteChatProgram(string text)
+		internal void WriteChatProgram(string text)
 		{
-			Instance.WriteChatSafe($"\ag[.NET Program] \aw{text}");
+			WriteChatSafe($"\ag[.NET Program] \aw{text}");
 		}
 
-		internal static void WriteChatScriptError(string text)
+		internal void WriteChatScriptError(string text)
 		{
-			Instance.WriteChat($"\ag[C# Script] \arError: \aw{text}");
+			WriteChat($"\ag[C# Script] \arError: \aw{text}");
 		}
 
-		internal static void WriteChatScriptWarning(string text)
+		internal void WriteChatScriptWarning(string text)
 		{
-			Instance.WriteChat($"\ag[C# Script] \ayWarning: \aw{text}");
+			WriteChat($"\ag[C# Script] \ayWarning: \aw{text}");
 		}
 
-		internal static void WriteChatScript(string text)
+		internal void WriteChatScript(string text)
 		{
-			Instance.WriteChat($"\ag[C# Script] \aw{text}");
+			WriteChat($"\ag[C# Script] \aw{text}");
 		}
 	}
 }

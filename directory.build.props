@@ -4,9 +4,10 @@
 	<PropertyGroup>
 		<EQInstallRootFolder>C:\Users\Public\Daybreak Game Company\Installed Games\EverQuest</EQInstallRootFolder>
 		<MQ2InstallLiveRootFolder>C:\Downloads\EQ\VeryVanilla\Live\Release</MQ2InstallLiveRootFolder>
-		<MQ2SourceRootFolder>C:\Source\VeryVanilla\</MQ2SourceRootFolder>
+		<MQ2SourceRootFolder>C:\Source\VeryVanilla</MQ2SourceRootFolder>
 
 		<!-- Deploy after build tasks require node.js is installed and local packages are installed via yarn/npm -->
+		<!-- If you don't want to deploy after build and/or don't want to install the nodejs runtime, set these to false in your local.env.props file -->
 		<DeployMQ2DotNetCoreFilesAfterBuild>true</DeployMQ2DotNetCoreFilesAfterBuild>
 		<DeployProgramFilesAfterBuild>true</DeployProgramFilesAfterBuild>
 	</PropertyGroup>
@@ -22,6 +23,32 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
+		<PackageReference Include="Roslynator.Analyzers" Version="2.3.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
 	</ItemGroup>
+
+	<!-- BEFORE BUILD TARGET, Create a default local.env.props file if it does not already exist -->
+	<Target Name="CreateLocalEnvironmentProps" BeforeTargets="BeforeBuild">
+		<PropertyGroup>
+			<FileLines>
+&lt;Project&gt;
+	&lt;PropertyGroup&gt;
+		&lt;EQInstallRootFolder&gt;C:\Users\Public\Daybreak Game Company\Installed Games\EverQuest&lt;/EQInstallRootFolder&gt;
+		&lt;MQ2InstallLiveRootFolder&gt;C:\Downloads\EQ\VeryVanilla\Live\Release&lt;/MQ2InstallLiveRootFolder&gt;
+		&lt;MQ2SourceRootFolder&gt;C:\Source\VeryVanilla&lt;/MQ2SourceRootFolder&gt;
+
+		&lt;!-- Deploy after build tasks require node.js is installed and local packages are installed via yarn/npm --&gt;
+		&lt;!-- If you don't want to deploy after build and/or don't want to install the nodejs runtime, set these to false in your local.env.props file --&gt;
+		&lt;DeployMQ2DotNetCoreFilesAfterBuild&gt;true&lt;/DeployMQ2DotNetCoreFilesAfterBuild&gt;
+		&lt;DeployProgramFilesAfterBuild>true&lt;/DeployProgramFilesAfterBuild&gt;
+	&lt;/PropertyGroup&gt;
+&lt;/Project&gt;
+			</FileLines>
+		</PropertyGroup>
+
+		<WriteLinesToFile File="$(SolutionDir)\local.env.props" Lines="$(FileLines)" Overwrite="True" Condition="Exists('$(SolutionDir)') AND !Exists('$(SolutionDir)\local.env.props')"/>
+	</Target>
 
 </Project>

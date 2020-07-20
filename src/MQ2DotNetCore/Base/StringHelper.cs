@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -28,11 +27,11 @@ namespace MQ2DotNetCore.Base
 			return string.Empty;
 		}
 
-		public static string? NormalizeCallerFilePath(string? callerFilePath)
+		public static string NormalizeCallerFilePath(string? callerFilePath)
 		{
 			if (string.IsNullOrEmpty(callerFilePath))
 			{
-				return callerFilePath;
+				return string.Empty;
 			}
 
 			var fileName = Path.GetFileNameWithoutExtension(callerFilePath);

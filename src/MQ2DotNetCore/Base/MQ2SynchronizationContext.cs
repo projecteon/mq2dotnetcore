@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 
-namespace MQ2DotNetCore
+namespace MQ2DotNetCore.Base
 {
 	/// <summary>
 	/// Per Alynel, the vast majority of EQ/MQ2 calls are not thread safe so we'll start most tasks using the task factory combined with this

@@ -4,7 +4,6 @@ using MQ2DotNetCore.MQ2Api.DataTypes;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace MQ2DotNetCore.MQ2Api
 {
@@ -26,7 +25,7 @@ namespace MQ2DotNetCore.MQ2Api
 		/// </summary>
 		public IEnumerable<SpawnType> GetAll()
 		{
-			var spawnManagerPointer = MQ2NativeHelper.GetSpawnManagerIntPointer();
+			var spawnManagerPointer = _mq2TypeFactory.MQ2NativeHelper.GetSpawnManagerIntPointer();
 			if (spawnManagerPointer == IntPtr.Zero)
 			{
 				yield break;

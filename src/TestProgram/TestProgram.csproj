@@ -10,9 +10,9 @@
 
 	<Target Name="DeployFiles" AfterTargets="Build" Condition="'$(DeployProgramFilesAfterBuild)'=='true'">
 		<PropertyGroup>
-			<FullOutputPathForProject>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)\$(OutDir)'))</FullOutputPathForProject>
-			<ScriptsFolder>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)\..\..\scripts'))</ScriptsFolder>
-			<ProgramDeployFolder>$(MQ2InstallLiveRootFolder)\MQ2DotNetCore\Programs\$(MSBuildProjectName)</ProgramDeployFolder>
+			<FullOutputPathForProject>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)\$(OutDir)').TrimEnd('\').TrimEnd('/'))</FullOutputPathForProject>
+			<ScriptsFolder>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)\..\..\scripts').TrimEnd('\').TrimEnd('/'))</ScriptsFolder>
+			<ProgramDeployFolder>$([System.IO.Path]::GetFullPath('$(MQ2InstallLiveRootFolder)\MQ2DotNetCore\Programs\$(MSBuildProjectName)').TrimEnd('\').TrimEnd('/'))</ProgramDeployFolder>
 		</PropertyGroup>
 
 		<Message Text="
@@ -22,11 +22,11 @@ Program Deploy Folder: $(ProgramDeployFolder)
 
 Scripts Folder: $(ScriptsFolder)
 
-Executing Deploy Files Task: node $(ScriptsFolder)\DeployFilesTask.js --sourcePath '$(FullOutputPathForProject)' --destinationPath '$(ProgramDeployFolder)'
+Executing Deploy Files Task: node &quot;$(ScriptsFolder)\DeployFilesTask.js&quot; --sourcePath &quot;$(FullOutputPathForProject)&quot; --destinationPath &quot;$(ProgramDeployFolder)&quot;
 "
 	/>
 
-		<Exec Command="node $(ScriptsFolder)\DeployFilesTask.js --sourcePath '$(FullOutputPathForProject)' --destinationPath '$(ProgramDeployFolder)'" />
+		<Exec Command="node &quot;$(ScriptsFolder)\DeployFilesTask.js&quot; --sourcePath &quot;$(FullOutputPathForProject)&quot; --destinationPath &quot;$(ProgramDeployFolder)&quot;" />
 
 	</Target>
 

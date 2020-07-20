@@ -1,4 +1,5 @@
-﻿using MQ2DotNetCore.Base;
+﻿using Microsoft.Extensions.Logging;
+using MQ2DotNetCore.Base;
 using System;
 
 namespace MQ2DotNetCore.MQ2Api
@@ -6,6 +7,7 @@ namespace MQ2DotNetCore.MQ2Api
 	public class MQ2Dependencies : IDisposable
 	{
 		protected bool _isDisposed = false;
+		protected readonly ILogger<MQ2Dependencies>? _logger;
 
 		protected ChatUtilities? _chat;
 		protected MQ2SubmoduleCommandRegistry? _commandRegistry;
@@ -20,6 +22,7 @@ namespace MQ2DotNetCore.MQ2Api
 			ChatUtilities chat,
 			MQ2SubmoduleCommandRegistry commandRegistry,
 			MQ2SubmoduleEventRegistry eventRegistry,
+			ILogger<MQ2Dependencies>? logger,
 			MQ2 mq2,
 			MQ2SynchronizationContext mq2SynchronizationContext,
 			MQ2TypeFactory mq2TypeFactory,
@@ -31,6 +34,7 @@ namespace MQ2DotNetCore.MQ2Api
 			_chat = chat;
 			_commandRegistry = commandRegistry;
 			_eventRegistry = eventRegistry;
+			_logger = logger;
 			_mq2 = mq2;
 			_mq2SynchronizationContext = mq2SynchronizationContext;
 			_mq2TypeFactory = mq2TypeFactory;
@@ -99,9 +103,9 @@ namespace MQ2DotNetCore.MQ2Api
 				return;
 			}
 
-			CleanupHelper.TryDispose(_commandRegistry);
-			CleanupHelper.TryDispose(_eventRegistry);
-			CleanupHelper.TryDispose(_mq2TypeFactory);
+			CleanupHelper.TryDispose(_commandRegistry, _logger);
+			CleanupHelper.TryDispose(_eventRegistry, _logger);
+			CleanupHelper.TryDispose(_mq2TypeFactory, _logger);
 
 			_chat = null;
 			_commandRegistry = null;

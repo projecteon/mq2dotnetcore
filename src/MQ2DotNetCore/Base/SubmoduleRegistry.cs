@@ -1,4 +1,5 @@
-﻿using MQ2DotNetCore.Logging;
+﻿using Microsoft.Extensions.Logging;
+using MQ2DotNetCore.Logging;
 using MQ2DotNetCore.MQ2Api;
 using System;
 using System.Collections.Concurrent;
@@ -6,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.ConstrainedExecution;
-using System.Runtime.Loader;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,17 +14,29 @@ namespace MQ2DotNetCore.Base
 {
 	internal sealed class SubmoduleRegistry : CriticalFinalizerObject, IDisposable
 	{
-		internal static readonly SubmoduleRegistry Instance = new SubmoduleRegistry();
-
 		private bool _isDisposed = false;
 		private readonly object _lock = new object();
+		private readonly ILogger<SubmoduleRegistry>? _logger;
+		private MQ2 _mq2Instance;
 
 		private readonly ConcurrentDictionary<string, SubmoduleProgramWrapper> _programsDictionary
 			= new ConcurrentDictionary<string, SubmoduleProgramWrapper>();
 
-		private SubmoduleRegistry()
-		{
+		private readonly ILogger<SubmoduleAssemblyLoadContext>? _submoduleAssemblyLoadContextLogger;
+		private readonly ILogger<SubmoduleProgramWrapper>? _submoduleProgramWrapperLogger;
 
+		internal SubmoduleRegistry(
+			ILogger<SubmoduleRegistry>? logger,
+			MQ2 mq2Instance,
+			ILogger<SubmoduleAssemblyLoadContext>? submoduleAssemblyLoadContextLogger,
+			ILogger<SubmoduleProgramWrapper>? submoduleProgramWrapperLogger
+		)
+		{
+			_mq2Instance = mq2Instance ?? throw new ArgumentNullException(nameof(mq2Instance));
+
+			_logger = logger;
+			_submoduleAssemblyLoadContextLogger = submoduleAssemblyLoadContextLogger;
+			_submoduleProgramWrapperLogger = submoduleProgramWrapperLogger;
 		}
 
 		// Finalizer
@@ -66,7 +78,7 @@ namespace MQ2DotNetCore.Base
 					if (!_programsDictionary.TryGetValue(submoduleName, out var submoduleWrapper)
 						|| submoduleName == null)
 					{
-						FileLoggingHelper.LogWarning($"Unable to retrieve the submodule wrapper for: {submoduleName}");
+						_logger?.LogWarningPrefixed($"Unable to retrieve the submodule wrapper for: {submoduleName}");
 						continue;
 					}
 
@@ -74,7 +86,7 @@ namespace MQ2DotNetCore.Base
 				}
 				catch (Exception exc)
 				{
-					FileLoggingHelper.LogError(exc);
+					_logger?.LogErrorPrefixed(exc);
 				}
 			}
 		}
@@ -88,9 +100,7 @@ namespace MQ2DotNetCore.Base
 
 			var allProgramNames = _programsDictionary.Keys.ToArray();
 
-#if DEBUG
-			FileLoggingHelper.LogTrace($"All program names: {string.Join(", ", allProgramNames)}");
-#endif
+			_logger?.LogDebugPrefixed($"All program names: {string.Join(", ", allProgramNames)}");
 
 			foreach (var programName in allProgramNames)
 			{
@@ -99,7 +109,7 @@ namespace MQ2DotNetCore.Base
 					if (!_programsDictionary.TryGetValue(programName, out var submoduleProgramWrapper)
 						|| submoduleProgramWrapper == null)
 					{
-						FileLoggingHelper.LogWarning($"Failed to get program wrapper for name: {programName}");
+						_logger?.LogWarningPrefixed($"Failed to get program wrapper for name: {programName}");
 						continue;
 					}
 
@@ -107,24 +117,22 @@ namespace MQ2DotNetCore.Base
 					{
 						if (!_programsDictionary.TryRemove(programName, out _))
 						{
-							FileLoggingHelper.LogWarning($"Failed to remove the completed program wrapper for name: {programName}");
+							_logger?.LogWarningPrefixed($"Failed to remove the completed program wrapper for name: {programName}");
 						}
 
-#if DEBUG
-						FileLoggingHelper.LogTrace($"Attempting to dispose submodule program wrapper with stopped task: {submoduleProgramWrapper}");
-#endif
+						_logger?.LogDebugPrefixed($"Attempting to dispose submodule program wrapper with stopped task: {submoduleProgramWrapper}");
 
-						CleanupHelper.TryDispose(submoduleProgramWrapper);
+						CleanupHelper.TryDispose(submoduleProgramWrapper, _logger);
 						continue;
 					}
 
 					var ellapsedMilliseconds = (DateTime.Now - submoduleProgramWrapper.StartTime).TotalMilliseconds;
-					FileLoggingHelper.LogDebug($"{programName} is currently running. [Ellapised Time: {ellapsedMilliseconds} ms ]");
-					MQ2.Instance.WriteChatSafe($"{nameof(PrintRunningPrograms)}: {programName} is currently running. [Ellapised Time: {ellapsedMilliseconds} ms ]");
+					_logger?.LogDebugPrefixed($"{programName} is currently running. [Ellapised Time: {ellapsedMilliseconds} ms ]");
+					_mq2Instance.WriteChatSafe($"{nameof(PrintRunningPrograms)}: {programName} is currently running. [Ellapised Time: {ellapsedMilliseconds} ms ]");
 				}
 				catch (Exception exc)
 				{
-					FileLoggingHelper.LogError($"(programName: {programName}) encountered an exception:\n\n{exc}\n");
+					_logger?.LogErrorPrefixed($"(programName: {programName}) encountered an exception:\n\n{exc}\n");
 				}
 			}
 		}
@@ -138,7 +146,7 @@ namespace MQ2DotNetCore.Base
 				var allProgramNames = _programsDictionary.Keys.ToArray();
 
 #if DEBUG
-				FileLoggingHelper.LogTrace($"Processing running program tasks.  All program names: {string.Join(", ", allProgramNames)}");
+				_logger?.LogTracePrefixed($"Processing running program tasks.  All program names: {string.Join(", ", allProgramNames)}");
 #endif
 
 				foreach (var programName in allProgramNames)
@@ -148,46 +156,51 @@ namespace MQ2DotNetCore.Base
 						if (!_programsDictionary.TryGetValue(programName, out var submoduleProgramWrapper)
 							|| submoduleProgramWrapper == null)
 						{
-							FileLoggingHelper.LogWarning($"Failed to get program wrapper for name: {programName}");
+							_logger?.LogWarningPrefixed($"Failed to get program wrapper for name: {programName}");
 							continue;
 						}
 
 						var isProgramTaskStopped = CleanupHelper.IsTaskStopped(submoduleProgramWrapper.Task);
 						if (isProgramTaskStopped || submoduleProgramWrapper.HasCancelled)
 						{
-							if (isProgramTaskStopped)
+							if (!isProgramTaskStopped)
 							{
-								FileLoggingHelper.LogWarning($"{programName} has been cancelled but it's Task has not stopped! Attempting to forcibly cancel and unload...");
+								_logger?.LogWarningPrefixed($"{programName} has been cancelled but it's Task has not stopped! Attempting to forcibly cancel and unload...");
 							}
+
+							_logger?.LogTracePrefixed($"Attempting to dispose submodule program wrapper with stopped task: {submoduleProgramWrapper.Name}");
+
+							if (!CleanupHelper.TryDispose(submoduleProgramWrapper, _logger))
+							{
+								_logger?.LogWarningPrefixed($"Failed to dispose of program: {programName}");
+								continue;
+							}
+
+							_logger?.LogTracePrefixed($"Attempting to remove submodule program wrapper from programs dictionary: {submoduleProgramWrapper.Name}");
 
 							if (!_programsDictionary.TryRemove(programName, out _))
 							{
-								FileLoggingHelper.LogWarning($"Failed to remove the completed program wrapper for name: {programName}");
+								_logger?.LogWarningPrefixed($"Failed to remove the completed program wrapper for name: {programName}");
 							}
 
-#if DEBUG
-							FileLoggingHelper.LogTrace($"Attempting to dispose submodule program wrapper with stopped task: {submoduleProgramWrapper}");
-#endif
-
-							CleanupHelper.TryDispose(submoduleProgramWrapper);
 							++removedTaskCount;
 							continue;
 						}
 
 #if DEBUG
-						FileLoggingHelper.LogTrace($"{programName} is running...");
+						_logger?.LogTracePrefixed($"{programName} is running...");
 #endif
 
 					}
 					catch (Exception exc)
 					{
-						FileLoggingHelper.LogError($"(programName: {programName}) encountered an exception:\n\n{exc}\n");
+						_logger?.LogErrorPrefixed($"(programName: {programName}) encountered an exception:\n\n{exc}\n");
 					}
 				}
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 			}
 
 			return removedTaskCount;
@@ -200,7 +213,7 @@ namespace MQ2DotNetCore.Base
 				throw new ObjectDisposedException(nameof(SubmoduleRegistry));
 			}
 
-			AssemblyLoadContext? assemblyLoadContext = null;
+			SubmoduleAssemblyLoadContext? assemblyLoadContext = null;
 			CancellationTokenSource? cancellationTokenSource = null;
 			IMQ2Program? submoduleProgramInstance = null;
 			Task? submoduleProgramTask = null;
@@ -214,7 +227,7 @@ namespace MQ2DotNetCore.Base
 
 				if (_programsDictionary.ContainsKey(submoduleProgramName))
 				{
-					FileLoggingHelper.LogInformation($"A submodule program instance is already loaded/running with the name: {submoduleProgramName}");
+					_logger?.LogInformationPrefixed($"A submodule program instance is already loaded/running with the name: {submoduleProgramName}");
 					return false;
 				}
 
@@ -222,7 +235,7 @@ namespace MQ2DotNetCore.Base
 				{
 					if (_programsDictionary.ContainsKey(submoduleProgramName))
 					{
-						FileLoggingHelper.LogInformation($"A submodule program instance is already loaded/running with the name: {submoduleProgramName}");
+						_logger?.LogInformationPrefixed($"A submodule program instance is already loaded/running with the name: {submoduleProgramName}");
 						return false;
 					}
 
@@ -230,26 +243,32 @@ namespace MQ2DotNetCore.Base
 					var submoduleFilePath = Path.Combine(MQ2DotNetCoreAssemblyInformation.AssemblyDirectory, "Programs", submoduleProgramName, $"{submoduleProgramName}.dll");
 					if (!File.Exists(submoduleFilePath))
 					{
-						FileLoggingHelper.LogWarning($"Submodule program file not found: {submoduleFilePath}");
+						_logger?.LogWarningPrefixed($"Submodule program file not found: {submoduleFilePath}");
 						return false;
 					}
 
-					assemblyLoadContext = new SubmoduleAssemblyLoadContext(submoduleProgramName, submoduleFilePath);
+					assemblyLoadContext = new SubmoduleAssemblyLoadContext(_submoduleAssemblyLoadContextLogger, submoduleProgramName, submoduleFilePath);
+
+					_logger?.LogDebugPrefixed($"Loading submodule assembly from: {submoduleFilePath}");
+
 					var submoduleAssembly = assemblyLoadContext.LoadFromAssemblyPath(submoduleFilePath);
+					//TryLoadDefaultAssemblies(assemblyLoadContext, submoduleProgramName);
+
+					_logger?.LogDebugPrefixed("Looking for IMQ2Program implementation types in loaded submodule assembly");
 
 					var submoduleTypes = submoduleAssembly.GetTypes();
 					var submoduleProgramTypes = submoduleTypes
 						.Where(nextType => typeof(IMQ2Program).IsAssignableFrom(nextType))
 						.ToList();
 
-					FileLoggingHelper.LogInformation($"Found {submoduleProgramTypes.Count} {nameof(IMQ2Program)} types in the {submoduleProgramName} assembly: {string.Join(", ", submoduleProgramTypes.Select(type => type.FullName))}");
+					_logger?.LogInformationPrefixed($"Found {submoduleProgramTypes.Count} {nameof(IMQ2Program)} types in the {submoduleProgramName} assembly: {string.Join(", ", submoduleProgramTypes.Select(type => type.FullName))}");
 
 					var submoduleProgramClassType = submoduleProgramTypes
 						.FirstOrDefault(nextType => nextType.Name.Contains(submoduleProgramName));
 
 					if (submoduleProgramClassType == null && submoduleProgramTypes.Count > 0)
 					{
-						FileLoggingHelper.LogWarning($"Did not find a program type with name: {submoduleProgramName}, falling back to the first {nameof(IMQ2Program)} type found.");
+						_logger?.LogWarningPrefixed($"Did not find a program type with name: {submoduleProgramName}, falling back to the first {nameof(IMQ2Program)} type found.");
 						submoduleProgramClassType = submoduleProgramTypes.FirstOrDefault();
 					}
 
@@ -295,6 +314,7 @@ namespace MQ2DotNetCore.Base
 					var wrapper = new SubmoduleProgramWrapper(
 						assemblyLoadContext,
 						cancellationTokenSource,
+						_submoduleProgramWrapperLogger,
 						mq2Dependencies,
 						submoduleProgramName,
 						submoduleProgramInstance,
@@ -304,7 +324,7 @@ namespace MQ2DotNetCore.Base
 
 					if (!_programsDictionary.TryAdd(submoduleProgramName, wrapper))
 					{
-						FileLoggingHelper.LogError($"Failed to add submodule program wrapper to the dictionary: {submoduleProgramName}");
+						_logger?.LogErrorPrefixed($"Failed to add submodule program wrapper to the dictionary: {submoduleProgramName}");
 					}
 #pragma warning restore CA2000 // Dispose objects before losing scope
 
@@ -313,20 +333,20 @@ namespace MQ2DotNetCore.Base
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError($"Unexpected exception while trying to start submodule program: {submoduleProgramName}\n\n{exc}\n");
+				_logger?.LogErrorPrefixed($"Unexpected exception while trying to start submodule program: {submoduleProgramName}\n\n{exc}\n");
 
-				CleanupHelper.TryCancel(cancellationTokenSource);
-				CleanupHelper.TryDispose(cancellationTokenSource);
-				CleanupHelper.TryDispose(submoduleProgramTask);
-				CleanupHelper.TryDispose(submoduleProgramWrapperTask);
+				CleanupHelper.TryCancel(cancellationTokenSource, _logger);
+				CleanupHelper.TryDispose(cancellationTokenSource, _logger);
+				CleanupHelper.TryDispose(submoduleProgramTask, _logger);
+				CleanupHelper.TryDispose(submoduleProgramWrapperTask, _logger);
 
 				if (submoduleProgramInstance is IDisposable disposableSubmoduleProgramInstance)
 				{
-					CleanupHelper.TryDispose(disposableSubmoduleProgramInstance);
+					CleanupHelper.TryDispose(disposableSubmoduleProgramInstance, _logger);
 				}
 
 				// Do our best to cleanup if an exception is thrown
-				CleanupHelper.TryUnload(assemblyLoadContext);
+				CleanupHelper.TryUnload(assemblyLoadContext, _logger);
 
 				return false;
 			}
@@ -339,7 +359,7 @@ namespace MQ2DotNetCore.Base
 				throw new ObjectDisposedException(nameof(SubmoduleRegistry));
 			}
 
-			FileLoggingHelper.LogInformation($"Stopping (disposing wrapper) of all submodule programs...");
+			_logger?.LogInformationPrefixed($"Stopping (disposing wrapper) of all submodule programs...");
 
 			var stoppedAllSuccessfully = true;
 			foreach (var submoduleProgramName in _programsDictionary.Keys)
@@ -369,11 +389,11 @@ namespace MQ2DotNetCore.Base
 					if (!_programsDictionary.TryRemove(submoduleProgramName, out var submoduleProgramWrapper)
 						|| submoduleProgramWrapper == null)
 					{
-						FileLoggingHelper.LogInformation($"(inside lock) A submodule program instance is not currently loaded/running with the name: {submoduleProgramName}");
+						_logger?.LogInformationPrefixed($"(inside lock) A submodule program instance is not currently loaded/running with the name: {submoduleProgramName}");
 						return false;
 					}
 
-					FileLoggingHelper.LogInformation($"Stopping (disposing wrapper) of submodule with program name: {submoduleProgramName}");
+					_logger?.LogInformationPrefixed($"Stopping (disposing wrapper) of submodule with program name: {submoduleProgramName}");
 					submoduleProgramWrapper.Dispose();
 
 					return true;
@@ -381,7 +401,7 @@ namespace MQ2DotNetCore.Base
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError($"Unexpected exception while trying to stop submodule program: {submoduleProgramName}\n\n{exc}\n");
+				_logger?.LogErrorPrefixed($"Unexpected exception while trying to stop submodule program: {submoduleProgramName}\n\n{exc}\n");
 				return false;
 			}
 		}
@@ -399,22 +419,22 @@ namespace MQ2DotNetCore.Base
 
 				if (!_programsDictionary.TryGetValue(submoduleProgramName, out var submoduleProgramWrapper))
 				{
-					FileLoggingHelper.LogWarning($"Failed to find/retrieve submodule program wrapper for name: {submoduleProgramName}");
+					_logger?.LogWarningPrefixed($"Failed to find/retrieve submodule program wrapper for name: {submoduleProgramName}");
 					return null;
 				}
 
 				var taskCancelStatus = await submoduleProgramWrapper.TryCancelAsync();
-				FileLoggingHelper.LogDebug($"TryCancelAsync task status: {taskCancelStatus}");
+				_logger?.LogDebugPrefixed($"TryCancelAsync task status: {taskCancelStatus}");
 
 				StopProgram(submoduleProgramName);
-				FileLoggingHelper.LogDebug($"Done stopping program: {submoduleProgramName}");
-				MQ2.Instance.WriteChatSafe($"Done stopping program: {submoduleProgramName}");
+				_logger?.LogDebugPrefixed($"Done stopping program: {submoduleProgramName}");
+				_mq2Instance.WriteChatSafe($"Done stopping program: {submoduleProgramName}");
 
 				return taskCancelStatus;
 			}
 			catch (Exception exc)
 			{
-				FileLoggingHelper.LogError(exc);
+				_logger?.LogErrorPrefixed(exc);
 				return null;
 			}
 		}

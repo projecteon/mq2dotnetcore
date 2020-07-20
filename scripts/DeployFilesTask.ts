@@ -85,7 +85,8 @@ if (!isNullOrUndefined(OptionParser.argv.skipWhenDestinationIsNewer)) {
 	skipUnmodified = Boolean(OptionParser.argv.skipWhenDestinationIsNewer);
 }
 
-console.log(OptionParser.argv)
+console.log('Running DeployFilesTask... arguments:\n');
+console.log(OptionParser.argv);
 
 let hasRequiredParameters = true;
 if (!sourcePath) {
