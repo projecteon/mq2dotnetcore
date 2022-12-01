@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<TargetFramework>net7.0</TargetFramework>
 	</PropertyGroup>
 	
 	<ItemGroup>
@@ -15,16 +15,7 @@
 			<ProgramDeployFolder>$([System.IO.Path]::GetFullPath('$(MQ2InstallLiveRootFolder)\MQ2DotNetCore\Programs\$(MSBuildProjectName)').TrimEnd('\').TrimEnd('/'))</ProgramDeployFolder>
 		</PropertyGroup>
 
-		<Message Text="
-Output Directory: $(FullOutputPathForProject)
-
-Program Deploy Folder: $(ProgramDeployFolder)
-
-Scripts Folder: $(ScriptsFolder)
-
-Executing Deploy Files Task: node &quot;$(ScriptsFolder)\DeployFilesTask.js&quot; --sourcePath &quot;$(FullOutputPathForProject)&quot; --destinationPath &quot;$(ProgramDeployFolder)&quot;
-"
-	/>
+		<Message Text="&#xD;&#xA;Output Directory: $(FullOutputPathForProject)&#xD;&#xA;&#xD;&#xA;Program Deploy Folder: $(ProgramDeployFolder)&#xD;&#xA;&#xD;&#xA;Scripts Folder: $(ScriptsFolder)&#xD;&#xA;&#xD;&#xA;Executing Deploy Files Task: node &quot;$(ScriptsFolder)\DeployFilesTask.js&quot; --sourcePath &quot;$(FullOutputPathForProject)&quot; --destinationPath &quot;$(ProgramDeployFolder)&quot;&#xD;&#xA;" />
 
 		<Exec Command="node &quot;$(ScriptsFolder)\DeployFilesTask.js&quot; --sourcePath &quot;$(FullOutputPathForProject)&quot; --destinationPath &quot;$(ProgramDeployFolder)&quot;" />
 
